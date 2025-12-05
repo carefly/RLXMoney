@@ -1,6 +1,9 @@
 {
-    "name": "${modName}",
-    "entry": "${modFile}",
-    "version": "${modVersion}",
-    "type": "native"
+    "name": "RLXMoney",
+    "entry": "RLXMoney.dll",
+    "version": "1.0.0",
+    "type": "native",
+    "description": "A comprehensive money management plugin for Minecraft servers based on LeviLamina framework",
+    "author": "RLX Team",
+    "website": "https://github.com/carefly/RLXMoney"
 }

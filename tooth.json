@@ -1,16 +1,18 @@
 {
     "format_version": 3,
     "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
-    "tooth": "example.com/my-user/my-mod",
-    "version": "0.0.0",
+    "tooth": "github.com/carefly/rlxmoney",
+    "version": "1.0.0",
     "info": {
-        "name": "My Mod",
-        "description": "Description of my mod",
+        "name": "RLXMoney",
+        "description": "A comprehensive money management plugin for Minecraft servers based on LeviLamina framework",
         "tags": [
             "platform:levilamina",
-            "type:mod"
+            "type:mod",
+            "economy",
+            "money"
         ],
-        "avatar_url": "https://example.com/my-mod/avatar.png"
+        "avatar_url": "https://github.com/carefly/RLXMoney/raw/main/avatar.png"
     },
     "variants": [
         {
@@ -23,13 +25,13 @@
                 {
                     "type": "zip",
                     "urls": [
-                        "https://example.com/my-mod/assets.zip"
+                        "https://github.com/carefly/RLXMoney/releases/download/v1.0.0/RLXMoney.zip"
                     ],
                     "placements": [
                         {
                             "type": "dir",
-                            "src": "my-mod/",
-                            "dest": "plugins/my-mod/"
+                            "src": "RLXMoney/",
+                            "dest": "plugins/RLXMoney/"
                         }
                     ]
                 }

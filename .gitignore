@@ -558,3 +558,20 @@ fabric.properties
 /.idea/
 /.vscode/
 /bin/
+
+.kilocode/
+.doc/
+CLAUDE.md
+.claude/
+.cursor/
+
+# Local xmake extensions (do not commit)
+xmake.local.lua
+
+# Build and deploy script (do not commit)
+make.ps1
+
+# Test temporary files and directories
+test_temp/
+test_*.db
+test_*.json
