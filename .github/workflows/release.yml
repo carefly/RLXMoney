@@ -33,8 +33,8 @@ jobs:
       - run: |
           # 只构建 SDK-static（SDK-shared 不需要构建，因为使用 RLXMoney.lib）
           xmake build SDK-static
-          # 使用 xmake 任务准备 SDK 包（SDK-shared 使用 RLXMoney.lib，不需要 SDK-shared.dll 和 .exp）
-          xmake package-sdk -o sdk-packages
+          # 使用 PowerShell 脚本准备 SDK 包（SDK-shared 使用 RLXMoney.lib，不需要 SDK-shared.dll 和 .exp）
+          powershell -ExecutionPolicy Bypass -File package-sdk.ps1 -Output sdk-packages
 
       - uses: actions/upload-artifact@v4
         with:
@@ -96,7 +96,7 @@ jobs:
           zip -r ../${{ github.event.repository.name }}-windows-x64.zip *
         working-directory: artifact
 
-      # 打包 SDK（使用 xmake 任务准备的包）
+      # 打包 SDK（使用 PowerShell 脚本准备的包）
       - run: |
           if [ -d sdk-packages/sdk-shared ]; then
             zip -r SDK-shared-windows-x64.zip sdk-packages/sdk-shared/
