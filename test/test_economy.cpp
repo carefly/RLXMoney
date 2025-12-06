@@ -1,13 +1,12 @@
 #include "mocks/MockLeviLaminaAPI.h"
 #include "mod/config/ConfigManager.h"
+#include "mod/core/SystemInitializer.h"
 #include "mod/data/DataStructures.h"
 #include "mod/database/DatabaseManager.h"
 #include "mod/economy/EconomyManager.h"
-#include "mod/core/SystemInitializer.h"
 #include "mod/types/Types.h"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
-#include <chrono>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -244,7 +243,7 @@ TEST_CASE("经济管理器 - Mock 测试", "[economy][mock][levilamina]") {
 TEST_CASE("EconomyManager 初始化测试", "[economy][manager][init]") {
     auto cleanupGuard = SingletonCleanupGuard{};
     // 为测试设置临时配置
-    auto& tempManager  = rlx_money::test::TestTempManager::getInstance();
+    auto& tempManager   = rlx_money::test::TestTempManager::getInstance();
     auto& configManager = rlx_money::ConfigManager::getInstance();
 
     std::string testConfigPath = tempManager.makeUniquePath("test_economy_config", ".json");
@@ -316,7 +315,7 @@ TEST_CASE("EconomyManager 玩家管理测试", "[economy][manager][player]") {
     }
 
     // 为测试设置临时配置
-    auto& tempManager  = rlx_money::test::TestTempManager::getInstance();
+    auto& tempManager   = rlx_money::test::TestTempManager::getInstance();
     auto& configManager = rlx_money::ConfigManager::getInstance();
 
     std::string testConfigPath = tempManager.makeUniquePath("test_economy_player_config", ".json");
@@ -889,7 +888,7 @@ TEST_CASE("EconomyManager 手续费舍入与溢出保护测试", "[economy][mana
             /*cacheSize*/ 2000,
             "NORMAL",
             /*initialBalance*/ 0,
-            /*maxBalance*/ 1000000000,  // 10亿，在int范围内
+            /*maxBalance*/ 1000000000, // 10亿，在int范围内
             /*minTransferAmount*/ 1,
             /*transferFee*/ 0,
             /*feePercentage*/ 2.5,
@@ -939,7 +938,7 @@ TEST_CASE("EconomyManager 手续费舍入与溢出保护测试", "[economy][mana
             /*cacheSize*/ 2000,
             "NORMAL",
             /*initialBalance*/ 0,
-            /*maxBalance*/ 2000000000,  // 20亿，在int范围内
+            /*maxBalance*/ 2000000000, // 20亿，在int范围内
             /*minTransferAmount*/ 1,
             /*transferFee*/ 0,
             /*feePercentage*/ 1.0,
@@ -1085,8 +1084,8 @@ TEST_CASE("EconomyManager 排行榜功能测试", "[economy][manager][leaderboar
         };
 
         // 初始化玩家并设置余额
-        std::string          currencyId = manager.getDefaultCurrencyId();
-        std::vector<int64_t> balances   = {5000, 3000, 8000, 1000, 6000};
+        std::string      currencyId = manager.getDefaultCurrencyId();
+        std::vector<int> balances   = {5000, 3000, 8000, 1000, 6000};
         for (size_t i = 0; i < players.size(); ++i) {
             rlx_money::LeviLaminaAPI::addMockPlayer(players[i].first, players[i].second);
             manager.initializeNewPlayer(players[i].first, players[i].second);
@@ -1226,7 +1225,7 @@ TEST_CASE("EconomyManager 单线程稳定性测试", "[economy][manager][stabili
         manager.setBalance("stable123", currencyId, 1000);
 
         const int numOperations   = 1000;
-        int64_t   expectedBalance = 1000;
+        int       expectedBalance = 1000;
 
         // 执行大量连续操作
         for (int i = 0; i < numOperations; ++i) {

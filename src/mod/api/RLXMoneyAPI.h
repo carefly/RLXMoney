@@ -1,14 +1,18 @@
 #pragma once
 
 #include "mod/data/DataStructures.h"
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 
-// 导出宏：在本DLL工程内定义 RLXMONEY_EXPORTS，则导出；在使用方不定义则导入
-#ifdef RLXMONEY_EXPORTS
+// 导出宏：
+// - 在DLL工程内定义 RLXMONEY_EXPORTS，则导出
+// - 在使用方不定义则导入
+// - 静态库不需要导出/导入，RLXMONEY_API为空
+#ifdef RLXMONEY_STATIC
+#define RLXMONEY_API
+#elif defined(RLXMONEY_EXPORTS)
 #define RLXMONEY_API __declspec(dllexport)
 #else
 #define RLXMONEY_API __declspec(dllimport)
@@ -37,12 +41,8 @@ public:
     /// @param amount 新余额
     /// @param description 操作描述
     /// @return 是否操作成功
-    static bool setBalance(
-        const std::string& xuid,
-        const std::string& currencyId,
-        int                amount,
-        const std::string& description = ""
-    );
+    static bool
+    setBalance(const std::string& xuid, const std::string& currencyId, int amount, const std::string& description = "");
 
     /// @brief 增加玩家金钱
     /// @param xuid 玩家XUID
@@ -50,12 +50,8 @@ public:
     /// @param amount 增加金额
     /// @param description 操作描述
     /// @return 是否操作成功
-    static bool addMoney(
-        const std::string& xuid,
-        const std::string& currencyId,
-        int                amount,
-        const std::string& description = ""
-    );
+    static bool
+    addMoney(const std::string& xuid, const std::string& currencyId, int amount, const std::string& description = "");
 
     /// @brief 扣除玩家金钱
     /// @param xuid 玩家XUID
@@ -95,8 +91,7 @@ public:
     /// @param currencyId 币种ID
     /// @param amount 需要的金额
     /// @return 余额是否充足
-    [[nodiscard]] static bool
-    hasSufficientBalance(const std::string& xuid, const std::string& currencyId, int amount);
+    [[nodiscard]] static bool hasSufficientBalance(const std::string& xuid, const std::string& currencyId, int amount);
 
     /// @brief 获取财富排行榜（按币种）
     /// @param currencyId 币种ID
