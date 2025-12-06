@@ -1,4 +1,4 @@
-# SDK 打包脚本
+﻿# SDK 打包脚本
 # 用途：为其他插件准备 SDK 包（库文件 + 头文件）
 # 用法: .\package-sdk.ps1 [-Output sdk-packages] [-SdkType all|shared|static]
 # 参数:
@@ -27,7 +27,34 @@ Write-Host "正在打包 SDK 到: $Output" -ForegroundColor Green
 # 获取构建目录
 $buildDir = "build"
 $libDir = Join-Path $buildDir "lib"
-$releaseDir = Join-Path $buildDir "windows" "x64" "release"
+
+# 查找 RLXMoney.lib 的辅助函数（在 build 目录中递归搜索）
+function Find-RLXMoneyLib {
+    $searchPaths = @(
+        Join-Path (Join-Path (Join-Path $buildDir "windows") "x64") "release",
+        Join-Path (Join-Path (Join-Path $buildDir "windows") "x64") "debug",
+        $buildDir
+    )
+    
+    foreach ($searchPath in $searchPaths) {
+        if (Test-Path $searchPath) {
+            $libFile = Get-ChildItem -Path $searchPath -Filter "RLXMoney.lib" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($libFile) {
+                return $libFile.FullName
+            }
+        }
+    }
+    
+    # 如果上述路径都没找到，在整个 build 目录中搜索
+    if (Test-Path $buildDir) {
+        $libFile = Get-ChildItem -Path $buildDir -Filter "RLXMoney.lib" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($libFile) {
+            return $libFile.FullName
+        }
+    }
+    
+    return $null
+}
 
 # 检查构建目录是否存在
 if (-not (Test-Path $buildDir)) {
@@ -76,8 +103,7 @@ function Package-SDK {
     param(
         [string]$sdkName,
         [string]$libFile,
-        [string]$libTargetName,
-        [string]$description
+        [string]$libTargetName
     )
     
     Write-Host "正在打包 $sdkName ..." -ForegroundColor Cyan
@@ -105,12 +131,13 @@ function Package-SDK {
 
 # 打包 SDK-shared（供其他插件链接到已安装的 RLXMoney.dll）
 if ($SdkType -eq "all" -or $SdkType -eq "shared") {
-    $rlxmoneyLib = Join-Path $releaseDir "RLXMoney.lib"
-    if (-not (Test-Path $rlxmoneyLib)) {
-        Write-Host "警告：RLXMoney.lib 未找到: $rlxmoneyLib" -ForegroundColor Yellow
+    $rlxmoneyLib = Find-RLXMoneyLib
+    if (-not $rlxmoneyLib -or -not (Test-Path $rlxmoneyLib)) {
+        Write-Host "警告：RLXMoney.lib 未找到" -ForegroundColor Yellow
         Write-Host "请确保已构建 RLXMoney 目标" -ForegroundColor Yellow
     } else {
-        Package-SDK "sdk-shared" $rlxmoneyLib "RLXMoney.lib" "供其他插件链接到已安装的 RLXMoney.dll"
+        Write-Host "找到 RLXMoney.lib: $rlxmoneyLib" -ForegroundColor Cyan
+        Package-SDK "sdk-shared" $rlxmoneyLib "RLXMoney.lib"
     }
 }
 
@@ -121,7 +148,7 @@ if ($SdkType -eq "all" -or $SdkType -eq "static") {
         Write-Host "警告：SDK-static.lib 未找到: $sdkStaticLib" -ForegroundColor Yellow
         Write-Host "请确保已构建 SDK-static 目标" -ForegroundColor Yellow
     } else {
-        Package-SDK "sdk-static" $sdkStaticLib "SDK-static.lib" "供其他插件静态链接，不依赖 RLXMoney.dll"
+        Package-SDK "sdk-static" $sdkStaticLib "SDK-static.lib"
     }
 }
 
