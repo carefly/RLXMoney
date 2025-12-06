@@ -25,16 +25,34 @@ jobs:
           xmake repo -u
 
       - run: |
-          xmake f -a x64 -m release -p windows -v -y
+          xmake f -a x64 -m release -p windows -y
 
       - run: |
-          xmake -v -y
+          xmake -w -y
+
+      - run: |
+          # 只构建 SDK-static（SDK-shared 不需要构建，因为使用 RLXMoney.lib）
+          xmake build SDK-static
+          # 使用 PowerShell 脚本准备 SDK 包（SDK-shared 使用 RLXMoney.lib，不需要 SDK-shared.dll 和 .exp）
+          powershell -ExecutionPolicy Bypass -File package-sdk.ps1 -Output sdk-packages
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
           path: |
             bin/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-sdk-libs-${{ github.sha }}
+          path: |
+            build/lib/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-sdk-packages-${{ github.sha }}
+          path: |
+            sdk-packages/
 
   # clang-format:
   #   runs-on: windows-latest
