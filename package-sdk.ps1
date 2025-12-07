@@ -30,10 +30,14 @@ $libDir = Join-Path $buildDir "lib"
 
 # 查找 RLXMoney.lib 的辅助函数（在 build 目录中递归搜索）
 function Find-RLXMoneyLib {
+    param([string]$buildDirectory)
+    
+    $windowsDir = Join-Path $buildDirectory "windows"
+    $x64Dir = Join-Path $windowsDir "x64"
     $searchPaths = @(
-        Join-Path (Join-Path (Join-Path $buildDir "windows") "x64") "release",
-        Join-Path (Join-Path (Join-Path $buildDir "windows") "x64") "debug",
-        $buildDir
+        (Join-Path $x64Dir "release"),
+        (Join-Path $x64Dir "debug"),
+        $buildDirectory
     )
     
     foreach ($searchPath in $searchPaths) {
@@ -46,8 +50,8 @@ function Find-RLXMoneyLib {
     }
     
     # 如果上述路径都没找到，在整个 build 目录中搜索
-    if (Test-Path $buildDir) {
-        $libFile = Get-ChildItem -Path $buildDir -Filter "RLXMoney.lib" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (Test-Path $buildDirectory) {
+        $libFile = Get-ChildItem -Path $buildDirectory -Filter "RLXMoney.lib" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($libFile) {
             return $libFile.FullName
         }
@@ -73,17 +77,28 @@ if (-not (Test-Path $Output)) {
 function Copy-SDKHeaders {
     param([string]$targetBase)
     
+    # 使用 Join-Path 构建跨平台路径
+    $srcModDir = Join-Path "src" "mod"
+    $apiDir = Join-Path $srcModDir "api"
+    $dataDir = Join-Path $srcModDir "data"
+    $typesDir = Join-Path $srcModDir "types"
+    
     $apiHeaders = @(
-        "src\mod\api\RLXMoneyAPI.h",
-        "src\mod\data\DataStructures.h",
-        "src\mod\types\Types.h"
+        (Join-Path $apiDir "RLXMoneyAPI.h"),
+        (Join-Path $dataDir "DataStructures.h"),
+        (Join-Path $typesDir "Types.h")
     )
     
     $copiedCount = 0
     foreach ($headerPath in $apiHeaders) {
         if (Test-Path $headerPath) {
-            $relPath = $headerPath -replace "^src\\mod\\", ""
-            $target = Join-Path $targetBase "include\$relPath"
+            # 使用跨平台的路径分隔符进行替换
+            $separator = [System.IO.Path]::DirectorySeparatorChar
+            $srcModPath = "src" + $separator + "mod" + $separator
+            $relPath = $headerPath -replace [regex]::Escape($srcModPath), ""
+            
+            $includeBase = Join-Path $targetBase "include"
+            $target = Join-Path $includeBase $relPath
             $targetDir = Split-Path $target -Parent
             if (-not (Test-Path $targetDir)) {
                 New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
@@ -103,12 +118,13 @@ function Package-SDK {
     param(
         [string]$sdkName,
         [string]$libFile,
-        [string]$libTargetName
+        [string]$libTargetName,
+        [string]$outputDir
     )
     
     Write-Host "正在打包 $sdkName ..." -ForegroundColor Cyan
     
-    $sdkDir = Join-Path $Output $sdkName
+    $sdkDir = Join-Path $outputDir $sdkName
     $includeDir = Join-Path $sdkDir "include"
     if (-not (Test-Path $includeDir)) {
         New-Item -ItemType Directory -Path $includeDir -Force | Out-Null
@@ -116,41 +132,76 @@ function Package-SDK {
     
     # 复制库文件
     if ($libFile -and (Test-Path $libFile)) {
-        Copy-Item -Path $libFile -Destination (Join-Path $sdkDir $libTargetName) -Force
+        $destPath = Join-Path $sdkDir $libTargetName
+        Copy-Item -Path $libFile -Destination $destPath -Force
         Write-Host "  ✓ 复制库文件: $libTargetName" -ForegroundColor Green
     } else {
         Write-Host "  ⚠ 库文件未找到: $libFile" -ForegroundColor Yellow
+        return $null
     }
     
     # 复制头文件
     $headerCount = Copy-SDKHeaders $sdkDir
-    Write-Host "  ✓ 复制头文件: $headerCount 个文件" -ForegroundColor Green
+    if ($headerCount -eq 0) {
+        Write-Host "  ⚠ 警告：未复制任何头文件" -ForegroundColor Yellow
+    } else {
+        Write-Host "  ✓ 复制头文件: $headerCount 个文件" -ForegroundColor Green
+    }
     
     return $sdkDir
 }
 
+# 跟踪打包结果
+$packagedCount = 0
+$failedPackages = @()
+
 # 打包 SDK-shared（供其他插件链接到已安装的 RLXMoney.dll）
 if ($SdkType -eq "all" -or $SdkType -eq "shared") {
-    $rlxmoneyLib = Find-RLXMoneyLib
+    Write-Host ""
+    $rlxmoneyLib = Find-RLXMoneyLib -buildDirectory $buildDir
     if (-not $rlxmoneyLib -or -not (Test-Path $rlxmoneyLib)) {
         Write-Host "警告：RLXMoney.lib 未找到" -ForegroundColor Yellow
         Write-Host "请确保已构建 RLXMoney 目标" -ForegroundColor Yellow
+        $failedPackages += "sdk-shared"
     } else {
         Write-Host "找到 RLXMoney.lib: $rlxmoneyLib" -ForegroundColor Cyan
-        Package-SDK "sdk-shared" $rlxmoneyLib "RLXMoney.lib"
+        $result = Package-SDK "sdk-shared" $rlxmoneyLib "RLXMoney.lib" $Output
+        if ($result) {
+            $packagedCount++
+        } else {
+            $failedPackages += "sdk-shared"
+        }
     }
 }
 
 # 打包 SDK-static（供其他插件静态链接，不依赖 RLXMoney.dll）
 if ($SdkType -eq "all" -or $SdkType -eq "static") {
+    Write-Host ""
     $sdkStaticLib = Join-Path $libDir "SDK-static.lib"
     if (-not (Test-Path $sdkStaticLib)) {
         Write-Host "警告：SDK-static.lib 未找到: $sdkStaticLib" -ForegroundColor Yellow
         Write-Host "请确保已构建 SDK-static 目标" -ForegroundColor Yellow
+        $failedPackages += "sdk-static"
     } else {
-        Package-SDK "sdk-static" $sdkStaticLib "SDK-static.lib"
+        $result = Package-SDK "sdk-static" $sdkStaticLib "SDK-static.lib" $Output
+        if ($result) {
+            $packagedCount++
+        } else {
+            $failedPackages += "sdk-static"
+        }
     }
 }
 
-Write-Host "SDK 打包完成！包已创建在: $Output" -ForegroundColor Green
+# 输出最终结果
+Write-Host ""
+if ($packagedCount -gt 0) {
+    Write-Host "SDK 打包完成！成功打包 $packagedCount 个包，已创建在: $Output" -ForegroundColor Green
+} else {
+    Write-Host "错误：没有成功打包任何 SDK" -ForegroundColor Red
+}
+
+if ($failedPackages.Count -gt 0) {
+    Write-Host "失败的包: $($failedPackages -join ', ')" -ForegroundColor Yellow
+    exit 1
+}
 
