@@ -82,7 +82,7 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
-          path: artifact
+          path: RLXMoney
 
       - uses: actions/download-artifact@v5
         with:
@@ -90,24 +90,24 @@ jobs:
           path: sdk-packages
 
       - run: |
-          cp CHANGELOG.md LICENSE README.md artifact/
-
-      - run: |
-          zip -r ../${{ github.event.repository.name }}-windows-x64.zip *
-        working-directory: artifact
+          zip -r ${{ github.event.repository.name }}-windows-x64.zip RLXMoney/
 
       # 打包 SDK（使用 PowerShell 脚本准备的包）
       - run: |
-          if [ -d sdk-packages/sdk-shared ]; then
-            zip -r SDK-shared-windows-x64.zip sdk-packages/sdk-shared/
+          if [ -d sdk-packages/sdk-windows-x64-shared ]; then
+            cd sdk-packages/sdk-windows-x64-shared
+            zip -r ../../sdk-windows-x64-shared.zip *
+            cd ../..
           fi
-          if [ -d sdk-packages/sdk-static ]; then
-            zip -r SDK-static-windows-x64.zip sdk-packages/sdk-static/
+          if [ -d sdk-packages/sdk-windows-x64-static ]; then
+            cd sdk-packages/sdk-windows-x64-static
+            zip -r ../../sdk-windows-x64-static.zip *
+            cd ../..
           fi
 
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             ${{ github.event.repository.name }}-windows-x64.zip
-            SDK-shared-windows-x64.zip
-            SDK-static-windows-x64.zip
+            sdk-windows-x64-shared.zip
+            sdk-windows-x64-static.zip

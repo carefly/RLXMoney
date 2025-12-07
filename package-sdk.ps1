@@ -162,14 +162,14 @@ if ($SdkType -eq "all" -or $SdkType -eq "shared") {
     if (-not $rlxmoneyLib -or -not (Test-Path $rlxmoneyLib)) {
         Write-Host "警告：RLXMoney.lib 未找到" -ForegroundColor Yellow
         Write-Host "请确保已构建 RLXMoney 目标" -ForegroundColor Yellow
-        $failedPackages += "sdk-shared"
+        $failedPackages += "sdk-windows-x64-shared"
     } else {
         Write-Host "找到 RLXMoney.lib: $rlxmoneyLib" -ForegroundColor Cyan
-        $result = Package-SDK "sdk-shared" $rlxmoneyLib "RLXMoney.lib" $Output
+        $result = Package-SDK "sdk-windows-x64-shared" $rlxmoneyLib "RLXMoney.lib" $Output
         if ($result) {
             $packagedCount++
         } else {
-            $failedPackages += "sdk-shared"
+            $failedPackages += "sdk-windows-x64-shared"
         }
     }
 }
@@ -181,13 +181,13 @@ if ($SdkType -eq "all" -or $SdkType -eq "static") {
     if (-not (Test-Path $sdkStaticLib)) {
         Write-Host "警告：SDK-static.lib 未找到: $sdkStaticLib" -ForegroundColor Yellow
         Write-Host "请确保已构建 SDK-static 目标" -ForegroundColor Yellow
-        $failedPackages += "sdk-static"
+        $failedPackages += "sdk-windows-x64-static"
     } else {
-        $result = Package-SDK "sdk-static" $sdkStaticLib "SDK-static.lib" $Output
+        $result = Package-SDK "sdk-windows-x64-static" $sdkStaticLib "SDK-static.lib" $Output
         if ($result) {
             $packagedCount++
         } else {
-            $failedPackages += "sdk-static"
+            $failedPackages += "sdk-windows-x64-static"
         }
     }
 }
