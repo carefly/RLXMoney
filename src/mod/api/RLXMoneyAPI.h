@@ -135,6 +135,15 @@ public:
     /// @return 默认币种ID
     [[nodiscard]] static std::string getDefaultCurrencyId();
 
+    /// @brief 初始化系统（加载配置、初始化数据库等）
+    /// @param configPath 配置文件路径
+    /// @return 是否初始化成功
+    static bool initialize(const std::string& configPath);
+
+    /// @brief 检查系统是否已初始化
+    /// @return 是否已初始化
+    [[nodiscard]] static bool isInitialized();
+
     // 禁止实例化
     RLXMoneyAPI()                              = delete;
     ~RLXMoneyAPI()                             = delete;

@@ -1,5 +1,6 @@
 #include "mod/api/RLXMoneyAPI.h"
 #include "mod/config/ConfigManager.h"
+#include "mod/database/DatabaseManager.h"
 #include "mod/economy/EconomyManager.h"
 
 
@@ -89,5 +90,46 @@ std::vector<std::string> RLXMoneyAPI::getEnabledCurrencyIds() {
 }
 
 std::string RLXMoneyAPI::getDefaultCurrencyId() { return ConfigManager::getInstance().getConfig().defaultCurrency; }
+
+bool RLXMoneyAPI::initialize(const std::string& configPath) {
+    try {
+        // 1. 加载配置
+        ConfigManager::getInstance().loadConfig(configPath);
+
+        // 2. 初始化数据库
+        auto& config = ConfigManager::getInstance().getConfig();
+        if (!DatabaseManager::getInstance().initialize(config.database.path)) {
+            return false;
+        }
+
+        // 3. 初始化经济管理器
+        if (!EconomyManager::getInstance().initialize()) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+bool RLXMoneyAPI::isInitialized() {
+    try {
+        // 检查数据库是否已初始化（这是最关键的检查）
+        if (!DatabaseManager::getInstance().isInitialized()) {
+            return false;
+        }
+
+        // 检查配置是否已加载（通过检查是否有默认币种）
+        auto& config = ConfigManager::getInstance().getConfig();
+        if (config.defaultCurrency.empty() || config.currencies.empty()) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
 
 } // namespace rlx_money
