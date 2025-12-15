@@ -54,6 +54,31 @@ jobs:
           path: |
             sdk-packages/
 
+      # 构建 debug 版本（用于 CI 测试）
+      - run: |
+          xmake f -a x64 -m debug -p windows -y
+
+      - run: |
+          xmake -w -y -j3
+
+      - run: |
+          # 构建 debug 版本的 SDK-static
+          xmake build SDK-static
+          # 使用 PowerShell 脚本准备 debug 版本的 SDK 包
+          powershell -ExecutionPolicy Bypass -File package-sdk.ps1 -Output sdk-packages-debug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-windows-x64-debug-${{ github.sha }}
+          path: |
+            bin/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-sdk-packages-debug-${{ github.sha }}
+          path: |
+            sdk-packages-debug/
+
   # clang-format:
   #   runs-on: windows-latest
   #   steps:
