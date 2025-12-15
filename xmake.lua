@@ -6,9 +6,9 @@ add_repositories("levimc-repo https://github.com/LiteLDev/xmake-repo.git")
 -- add_requires("levilamina develop") to use develop version
 -- please note that you should add bdslibrary yourself if using dev version
 if is_config("target_type", "server") then
-    add_requires("levilamina 1.7.0", {configs = {target_type = "server"}})
+    add_requires("levilamina 1.7.7", {configs = {target_type = "server"}})
 else
-    add_requires("levilamina 1.7.0", {configs = {target_type = "client"}})
+    add_requires("levilamina 1.7.7", {configs = {target_type = "client"}})
 end
 
 add_requires("levibuildscript")
@@ -52,6 +52,8 @@ function apply_common_config()
     set_exceptions("none")
     set_languages("c++20")
     set_symbols("none")
+    -- 先从公共头查找，再从源码目录查找
+    add_includedirs("include", "src")
 end
 
 -- 应用 SDK 配置到当前目标（在 target 块内调用）

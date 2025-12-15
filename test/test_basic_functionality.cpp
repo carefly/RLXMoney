@@ -1,7 +1,7 @@
 #include "mocks/MockLeviLaminaAPI.h"
-#include "mod/data/DataStructures.h"
+#include <RLXMoney/data/DataStructures.h>
 #include "mod/exceptions/MoneyException.h"
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include <catch2/catch_all.hpp>
 
 

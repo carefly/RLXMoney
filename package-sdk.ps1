@@ -77,40 +77,21 @@ if (-not (Test-Path $Output)) {
 function Copy-SDKHeaders {
     param([string]$targetBase)
     
-    # 使用 Join-Path 构建跨平台路径
-    $srcModDir = Join-Path "src" "mod"
-    $apiDir = Join-Path $srcModDir "api"
-    $dataDir = Join-Path $srcModDir "data"
-    $typesDir = Join-Path $srcModDir "types"
-    
-    $apiHeaders = @(
-        (Join-Path $apiDir "RLXMoneyAPI.h"),
-        (Join-Path $dataDir "DataStructures.h"),
-        (Join-Path $typesDir "Types.h")
-    )
-    
-    $copiedCount = 0
-    foreach ($headerPath in $apiHeaders) {
-        if (Test-Path $headerPath) {
-            # 使用跨平台的路径分隔符进行替换
-            $separator = [System.IO.Path]::DirectorySeparatorChar
-            $srcModPath = "src" + $separator + "mod" + $separator
-            $relPath = $headerPath -replace [regex]::Escape($srcModPath), ""
-            
-            $includeBase = Join-Path $targetBase "include"
-            $target = Join-Path $includeBase $relPath
-            $targetDir = Split-Path $target -Parent
-            if (-not (Test-Path $targetDir)) {
-                New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
-            }
-            Copy-Item -Path $headerPath -Destination $target -Force
-            $copiedCount++
-            Write-Host "  ✓ 复制头文件: $relPath" -ForegroundColor Green
-        } else {
-            Write-Host "  ⚠ 头文件未找到: $headerPath" -ForegroundColor Yellow
-        }
+    # 直接从仓库的 include/RLXMoney 复制公共头文件
+    $includeSrc = Join-Path "include" "RLXMoney"
+    if (-not (Test-Path $includeSrc)) {
+        Write-Host "  ⚠ 头文件目录未找到: $includeSrc" -ForegroundColor Yellow
+        return 0
     }
-    return $copiedCount
+
+    $includeDst = Join-Path (Join-Path $targetBase "include") "RLXMoney"
+    if (-not (Test-Path $includeDst)) {
+        New-Item -ItemType Directory -Path $includeDst -Force | Out-Null
+    }
+
+    Copy-Item -Path (Join-Path $includeSrc "*") -Destination $includeDst -Recurse -Force
+    Write-Host "  ✓ 复制头文件目录: RLXMoney" -ForegroundColor Green
+    return 1
 }
 
 # 打包单个 SDK 的通用函数

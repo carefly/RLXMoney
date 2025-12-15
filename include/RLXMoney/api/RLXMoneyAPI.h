@@ -1,10 +1,9 @@
 #pragma once
 
-#include "mod/data/DataStructures.h"
+#include <RLXMoney/data/DataStructures.h>
 #include <optional>
 #include <string>
 #include <vector>
-
 
 // 导出宏：
 // - 在DLL工程内定义 RLXMONEY_EXPORTS，则导出
@@ -17,7 +16,6 @@
 #else
 #define RLXMONEY_API __declspec(dllimport)
 #endif
-
 
 namespace rlx_money {
 
@@ -152,3 +150,5 @@ public:
 };
 
 } // namespace rlx_money
+
+

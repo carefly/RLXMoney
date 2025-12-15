@@ -1,4 +1,4 @@
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include <stdexcept>
 
 namespace rlx_money {

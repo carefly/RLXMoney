@@ -1,4 +1,4 @@
-#include "mod/api/RLXMoneyAPI.h"
+#include <RLXMoney/api/RLXMoneyAPI.h>
 #include "mod/config/ConfigManager.h"
 #include "mod/database/DatabaseManager.h"
 #include "mod/economy/EconomyManager.h"

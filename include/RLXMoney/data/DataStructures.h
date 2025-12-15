@@ -1,11 +1,10 @@
 #pragma once
 
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <utility>
-
 
 namespace rlx_money {
 
@@ -129,3 +128,5 @@ struct TopBalanceEntry {
 };
 
 } // namespace rlx_money
+
+

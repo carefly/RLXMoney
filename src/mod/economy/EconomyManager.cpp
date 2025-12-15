@@ -2,7 +2,7 @@
 #include "mod/config/ConfigManager.h"
 #include "mod/database/DatabaseManager.h"
 #include "mod/exceptions/MoneyException.h"
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include <SQLiteCpp/Statement.h>
 #include <chrono>
 #include <cmath>

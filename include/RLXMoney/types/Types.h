@@ -2,7 +2,6 @@
 
 #include <string>
 
-
 namespace rlx_money {
 
 /// @brief 交易类型枚举
@@ -90,3 +89,5 @@ enum class ErrorCode {
 );
 
 } // namespace rlx_money
+
+

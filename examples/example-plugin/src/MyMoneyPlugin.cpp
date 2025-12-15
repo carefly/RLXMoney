@@ -1,5 +1,5 @@
 #include "mod/MyMoneyPlugin.h"
-#include "mod/api/RLXMoneyAPI.h"
+#include <RLXMoney/api/RLXMoneyAPI.h>
 #include "ll/api/mod/RegisterHelper.h"
 #include "ll/api/service/Bedrock.h"
 #include "mc/world/actor/player/Player.h"

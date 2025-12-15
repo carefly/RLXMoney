@@ -5,6 +5,10 @@ add_rules("mode.debug", "mode.release")
 
 -- 添加 LeviLamina 依赖
 add_repositories("levimc-repo https://github.com/LiteLDev/xmake-repo.git")
+
+-- 添加 xmake-repo 仓库（包含 RLXMoney 包定义）
+add_repositories("rlx-repo https://github.com/carefly/xmake-repo.git")
+
 if is_config("target_type", "server") then
     add_requires("levilamina 1.7.0", {configs = {target_type = "server"}})
 else
@@ -12,7 +16,7 @@ else
 end
 
 -- 方式一：使用 xmake 包（推荐）
--- 需要先执行: xmake repo rlxmoney https://github.com/carefly/rlxmoney-xmake-repo
+-- 使用 xmake-repo 中的 RLXMoney 包（从 GitHub releases 下载预编译 SDK）
 add_requires("rlxmoney v1.0.1", {configs = {shared = true}})
 
 -- 方式二：使用本地 SDK（注释掉方式一，取消注释方式二）
@@ -53,7 +57,7 @@ target("MyMoneyPlugin")
 
 -- 示例使用：
 -- 在你的代码中：
--- #include "mod/api/RLXMoneyAPI.h"
+-- #include <RLXMoney/api/RLXMoneyAPI.h>
 --
 -- void onPlayerJoin(Player* player) {
 --     auto balance = rlx_money::RLXMoneyAPI::getBalance(player->getXuid(), "gold");

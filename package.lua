@@ -102,5 +102,5 @@ package("rlxmoney")
     -- 测试函数
     on_test(function(package)
         -- 测试头文件是否存在（include 目录已在 includedirs 中，所以使用相对路径）
-        assert(package:has_cxfuncs("rlx_money::RLXMoneyAPI::getBalance", {includes = {"mod/api/RLXMoneyAPI.h"}}))
+        assert(package:has_cxfuncs("rlx_money::RLXMoneyAPI::getBalance", {includes = {"RLXMoney/api/RLXMoneyAPI.h"}}))
     end)

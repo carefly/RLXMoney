@@ -5,7 +5,7 @@
 #include "mod/config/ConfigManager.h"
 #include "mod/economy/EconomyManager.h"
 #include "mod/exceptions/MoneyException.h"
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include <catch2/catch_all.hpp>
 
 namespace rlx_money::test {

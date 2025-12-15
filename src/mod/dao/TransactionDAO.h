@@ -1,8 +1,8 @@
 #pragma once
 
-#include "mod/data/DataStructures.h"
+#include <RLXMoney/data/DataStructures.h>
 #include "mod/database/DatabaseManager.h"
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include <SQLiteCpp/Statement.h>
 #include <optional>
 #include <vector>

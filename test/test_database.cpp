@@ -1,6 +1,6 @@
 #include "mod/dao/PlayerDAO.h"
 #include "mod/dao/TransactionDAO.h"
-#include "mod/data/DataStructures.h"
+#include <RLXMoney/data/DataStructures.h>
 #include "mod/database/DatabaseManager.h"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>

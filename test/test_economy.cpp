@@ -1,10 +1,10 @@
 #include "mocks/MockLeviLaminaAPI.h"
 #include "mod/config/ConfigManager.h"
 #include "mod/core/SystemInitializer.h"
-#include "mod/data/DataStructures.h"
+#include <RLXMoney/data/DataStructures.h>
 #include "mod/database/DatabaseManager.h"
 #include "mod/economy/EconomyManager.h"
-#include "mod/types/Types.h"
+#include <RLXMoney/types/Types.h>
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
 #include <fstream>

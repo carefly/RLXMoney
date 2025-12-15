@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mod/data/DataStructures.h"
+#include <RLXMoney/data/DataStructures.h>
 #include "mod/database/DatabaseManager.h"
 #include <SQLiteCpp/Statement.h>
 #include <optional>
