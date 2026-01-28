@@ -22,7 +22,7 @@ namespace rlx_money {
 
 void Commands::registerCommands() {
     using ll::command::CommandRegistrar;
-    auto& commad = CommandRegistrar::getInstance().getOrCreateCommand("money", "金钱");
+    auto& commad = CommandRegistrar::getInstance(false).getOrCreateCommand("money", "金钱");
     commad.overload<BasicCommand>()
         .required("Operation")
         .optional("Currency")
@@ -189,7 +189,7 @@ void Commands::registerCommands() {
             }
         });
 
-    auto& opCommand = CommandRegistrar::getInstance()
+    auto& opCommand = CommandRegistrar::getInstance(false)
                           .getOrCreateCommand("moneyop", "金钱管理", CommandPermissionLevel::GameDirectors);
     // 管理员命令处理函数
     opCommand.overload<AdminCommand>()

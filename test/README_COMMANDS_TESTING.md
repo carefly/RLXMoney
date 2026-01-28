@@ -124,10 +124,10 @@ REQUIRE(rlx_money::test::CommandTestHelper::testAdminSetCommand(
 
 ```bash
 # 构建测试
-xmake build RLXMoney_tests
+xmake build tests
 
 # 运行测试
-xmake run RLXMoney_tests
+xmake run tests
 ```
 
 ## 扩展测试

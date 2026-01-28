@@ -6,9 +6,9 @@ add_repositories("levimc-repo https://github.com/LiteLDev/xmake-repo.git")
 -- add_requires("levilamina develop") to use develop version
 -- please note that you should add bdslibrary yourself if using dev version
 if is_config("target_type", "server") then
-    add_requires("levilamina 1.7.7", {configs = {target_type = "server"}})
+    add_requires("levilamina 1.9.2", {configs = {target_type = "server"}})
 else
-    add_requires("levilamina 1.7.7", {configs = {target_type = "client"}})
+    add_requires("levilamina 1.9.2", {configs = {target_type = "client"}})
 end
 
 add_requires("levibuildscript")
@@ -35,6 +35,13 @@ option_end()
 -- 公共编译选项
 local common_cxflags = {"/EHa", "/utf-8", "/W4", "/w44265", "/w44289", "/w44296", "/w45263", "/w44738", "/w45204"}
 local common_defines = {"NOMINMAX", "UNICODE"}
+
+-- 根据 target_type 添加平台宏定义（LeviLamina SDK 需要）
+if is_config("target_type", "server") then
+    table.insert(common_defines, "LL_PLAT_S")
+else
+    table.insert(common_defines, "LL_PLAT_C")
+end
 
 -- SDK 排除的文件模式（统一管理）
 local sdk_excluded_files = {
@@ -105,7 +112,7 @@ target("SDK-static")
     set_kind("static")  -- 生成静态库
 
 -- 测试目标
-target("RLXMoney_tests")
+target("tests")
     apply_common_config()
     add_defines("TESTING", "RLXMONEY_EXPORTS")
     add_packages("catch2", "sqlitecpp", "nlohmann_json")
