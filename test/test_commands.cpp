@@ -1,10 +1,9 @@
 #include "mocks/MockLeviLaminaAPI.h"
-#include "mod/config/ConfigManager.h"
+#include "mod/config/MoneyConfig.h"
 #include "mod/economy/EconomyManager.h"
 #include "utils/CommandTestHelper.h"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
-#include <chrono>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -63,17 +62,20 @@ std::pair<std::string, std::string> setupIsolatedManager(
     testConfig["top_list"]["default_count"] = defaultTopCount;
     testConfig["top_list"]["max_count"]     = maxTopCount;
 
+    // 新的配置系统使用 "RLXMoney" 节点作为顶层
+    nlohmann::json finalConfig;
+    finalConfig["RLXMoney"] = testConfig;
+
     std::ofstream configFile(configPath);
-    configFile << testConfig.dump(4);
+    configFile << finalConfig.dump(4);
     configFile.close();
 
     // 注册文件以便自动清理
     rlx_money::test::TestTempManager::getInstance().registerFile(configPath);
     rlx_money::test::TestTempManager::getInstance().registerFile(dbPath);
 
-    auto& configManager = rlx_money::ConfigManager::getInstance();
-    REQUIRE_NOTHROW(configManager.loadConfig(configPath));
-    REQUIRE_NOTHROW(configManager.reloadConfig());
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(configPath));
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::reload());
 
     auto& manager = rlx_money::EconomyManager::getInstance();
     REQUIRE(manager.initialize());
@@ -110,9 +112,8 @@ void cleanupSingletonState() {
         dbManager.close();
     }
 
-    // 重置 ConfigManager 的配置状态
-    auto& configManager = rlx_money::ConfigManager::getInstance();
-    configManager.resetForTesting();
+    // 重置 MoneyConfig 的配置状态
+    rlx_money::MoneyConfig::resetForTesting();
 
     // 清理 Mock 玩家数据
     rlx_money::LeviLaminaAPI::clearMockPlayers();

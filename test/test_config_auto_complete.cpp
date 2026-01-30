@@ -1,4 +1,4 @@
-#include "mod/config/ConfigManager.h"
+#include "mod/config/MoneyConfig.h"
 #include "mod/config/ConfigStructures.h"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
@@ -17,26 +17,27 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         // 创建只包含部分配置的配置文件（所有字段在 currencies["gold"] 节点下，使用驼峰命名）
         std::ofstream configFile(testConfigPath);
         configFile << R"({
-            "defaultCurrency": "gold",
-            "currencies": {
-                "gold": {
-                    "name": "金币",
-                    "symbol": "G",
-                    "displayFormat": "{amount} {symbol}",
-                    "enabled": true,
-                    "initialBalance": 5000
+            "RLXMoney": {
+                "defaultCurrency": "gold",
+                "currencies": {
+                    "gold": {
+                        "currencyId": "gold",
+                        "name": "金币",
+                        "symbol": "G",
+                        "displayFormat": "{amount} {symbol}",
+                        "enabled": true,
+                        "initialBalance": 5000
+                    }
                 }
             }
         })";
         configFile.close();
 
-        auto& manager = rlx_money::ConfigManager::getInstance();
-
-        // 加载配置
-        REQUIRE_NOTHROW(manager.loadConfig(testConfigPath));
+        // 初始化配置
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
 
         // 验证配置值
-        auto& config = manager.getConfig();
+        const auto& config = rlx_money::MoneyConfig::get();
         REQUIRE(config.defaultCurrency == "gold");
         REQUIRE(config.currencies.find("gold") != config.currencies.end());
         REQUIRE(config.currencies.at("gold").initialBalance == 5000);
@@ -56,9 +57,10 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         REQUIRE(content.find("\"allowPlayerTransfer\"") != std::string::npos);
         REQUIRE(content.find("\"minTransferAmount\"") != std::string::npos);
         REQUIRE(content.find("\"database\"") != std::string::npos);
-        REQUIRE(content.find("\"top_list\"") != std::string::npos);
+        REQUIRE(content.find("\"topList\"") != std::string::npos);
 
         // 清理
+        rlx_money::MoneyConfig::resetForTesting();
         // 文件会自动清理
     }
 
@@ -74,10 +76,8 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         configFile << "{}";
         configFile.close();
 
-        auto& manager = rlx_money::ConfigManager::getInstance();
-
-        // 加载配置
-        REQUIRE_NOTHROW(manager.loadConfig(emptyConfigPath));
+        // 初始化配置
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(emptyConfigPath));
 
         // 读取保存后的配置文件，验证是否包含所有配置项
         std::ifstream updatedFile(emptyConfigPath);
@@ -88,12 +88,13 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         REQUIRE(content.find("\"defaultCurrency\"") != std::string::npos);
         REQUIRE(content.find("\"currencies\"") != std::string::npos);
         REQUIRE(content.find("\"database\"") != std::string::npos);
-        REQUIRE(content.find("\"top_list\"") != std::string::npos);
+        REQUIRE(content.find("\"topList\"") != std::string::npos);
         REQUIRE(content.find("\"initialBalance\"") != std::string::npos);
         REQUIRE(content.find("\"maxBalance\"") != std::string::npos);
         REQUIRE(content.find("\"allowPlayerTransfer\"") != std::string::npos);
 
         // 清理
+        rlx_money::MoneyConfig::resetForTesting();
         // 文件会自动清理
     }
 
@@ -101,45 +102,46 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         // 创建完整的配置文件（所有字段在 currencies["gold"] 节点下，使用驼峰命名）
         std::ofstream configFile(testConfigPath);
         configFile << R"({
-            "defaultCurrency": "gold",
-            "currencies": {
-                "gold": {
-                    "name": "金币",
-                    "symbol": "G",
-                    "displayFormat": "{amount} {symbol}",
-                    "enabled": true,
-                    "initialBalance": 2000,
-                    "maxBalance": 5000000,
-                    "minTransferAmount": 10,
-                    "transferFee": 5,
-                    "feePercentage": 1.5,
-                    "allowPlayerTransfer": false
+            "RLXMoney": {
+                "defaultCurrency": "gold",
+                "currencies": {
+                    "gold": {
+                        "currencyId": "gold",
+                        "name": "金币",
+                        "symbol": "G",
+                        "displayFormat": "{amount} {symbol}",
+                        "enabled": true,
+                        "initialBalance": 2000,
+                        "maxBalance": 5000000,
+                        "minTransferAmount": 10,
+                        "transferFee": 5,
+                        "feePercentage": 1.5,
+                        "allowPlayerTransfer": false
+                    }
+                },
+                "database": {
+                    "path": "custom_money.db",
+                    "optimization": {
+                        "walMode": false,
+                        "cacheSize": 5000,
+                        "synchronous": "FULL"
+                    }
+                },
+                "topList": {
+                    "defaultCount": 20,
+                    "maxCount": 100
                 }
-            },
-            "database": {
-                "path": "custom_money.db",
-                "optimization": {
-                    "wal_mode": false,
-                    "cache_size": 5000,
-                    "synchronous": "FULL"
-                }
-            },
-            "top_list": {
-                "default_count": 20,
-                "max_count": 100
             }
         })";
         configFile.close();
-
-        auto& manager = rlx_money::ConfigManager::getInstance();
 
         // 记录原始文件内容
         std::ifstream originalFile(testConfigPath);
         std::string   originalContent((std::istreambuf_iterator<char>(originalFile)), std::istreambuf_iterator<char>());
         originalFile.close();
 
-        // 加载配置
-        REQUIRE_NOTHROW(manager.loadConfig(testConfigPath));
+        // 初始化配置
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
 
         // 读取更新后的文件内容
         std::ifstream updatedFile(testConfigPath);
@@ -147,13 +149,14 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         updatedFile.close();
 
         // 验证配置值
-        auto& config = manager.getConfig();
+        const auto& config = rlx_money::MoneyConfig::get();
         REQUIRE(config.defaultCurrency == "gold");
         REQUIRE(config.currencies.at("gold").initialBalance == 2000);
         REQUIRE(config.currencies.at("gold").maxBalance == 5000000);
         REQUIRE(config.currencies.at("gold").allowPlayerTransfer == false);
 
         // 清理
+        rlx_money::MoneyConfig::resetForTesting();
         // 文件会自动清理
     }
 }

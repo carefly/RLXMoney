@@ -127,7 +127,6 @@ target("tests")
         "test/mocks/MockLeviLaminaAPI.cpp",
         "test/utils/CommandTestHelper.cpp",
         "test/utils/TestTempManager.cpp",
-        "src/mod/config/ConfigManager.cpp",
         "src/mod/database/DatabaseManager.cpp",
         "src/mod/core/SystemInitializer.cpp",
         "src/mod/dao/PlayerDAO.cpp",

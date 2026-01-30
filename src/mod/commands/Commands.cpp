@@ -1,6 +1,6 @@
 #include "Commands.h"
 #include "mod/api/LeviLaminaAPI.h"
-#include "mod/config/ConfigManager.h"
+#include "mod/config/MoneyConfig.h"
 #include "mod/economy/EconomyManager.h"
 #include "mod/exceptions/MoneyException.h"
 
@@ -50,7 +50,7 @@ void Commands::registerCommands() {
                         return;
                     }
 
-                    auto& config = ConfigManager::getInstance().getConfig();
+                    const auto& config = MoneyConfig::get();
                     player->sendMessage("§a你的所有币种余额：");
                     for (const auto& balance : balances) {
                         auto currencyIt = config.currencies.find(balance.currencyId);
@@ -67,7 +67,7 @@ void Commands::registerCommands() {
                         return;
                     }
 
-                    auto&       config     = ConfigManager::getInstance().getConfig();
+                    const auto& config     = MoneyConfig::get();
                     auto        currencyIt = config.currencies.find(currencyId);
                     std::string currencyName =
                         currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -80,7 +80,7 @@ void Commands::registerCommands() {
                     return;
                 }
 
-                auto&       config       = ConfigManager::getInstance().getConfig();
+                const auto& config       = MoneyConfig::get();
                 auto        currencyIt   = config.currencies.find(currencyId);
                 std::string currencyName = currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
                 player->sendMessage(fmt::format("§b{} §a交易记录：", currencyName));
@@ -134,7 +134,7 @@ void Commands::registerCommands() {
 
             // 执行转账
             try {
-                auto&       config       = ConfigManager::getInstance().getConfig();
+                const auto& config       = MoneyConfig::get();
                 auto        currencyIt   = config.currencies.find(currencyId);
                 std::string currencyName = currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
 
@@ -268,7 +268,7 @@ void Commands::registerCommands() {
                                 std::string(player->mName)
                             );
 
-                            auto&       config     = ConfigManager::getInstance().getConfig();
+                            const auto& config     = MoneyConfig::get();
                             auto        currencyIt = config.currencies.find(currencyId);
                             std::string currencyName =
                                 currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -298,7 +298,7 @@ void Commands::registerCommands() {
                                 std::string(player->mName)
                             );
 
-                            auto&       config     = ConfigManager::getInstance().getConfig();
+                            const auto& config     = MoneyConfig::get();
                             auto        currencyIt = config.currencies.find(currencyId);
                             std::string currencyName =
                                 currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -325,7 +325,7 @@ void Commands::registerCommands() {
                                 std::string(player->mName)
                             );
 
-                            auto&       config     = ConfigManager::getInstance().getConfig();
+                            const auto& config     = MoneyConfig::get();
                             auto        currencyIt = config.currencies.find(currencyId);
                             std::string currencyName =
                                 currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -346,7 +346,7 @@ void Commands::registerCommands() {
                                                     const std::string& currencyId) {
                             auto balance = EconomyManager::getInstance().getBalance(targetXuid, currencyId);
                             if (balance.has_value()) {
-                                auto&       config     = ConfigManager::getInstance().getConfig();
+                                const auto& config     = MoneyConfig::get();
                                 auto        currencyIt = config.currencies.find(currencyId);
                                 std::string currencyName =
                                     currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -377,7 +377,7 @@ void Commands::registerCommands() {
                                 return;
                             }
 
-                            auto&       config     = ConfigManager::getInstance().getConfig();
+                            const auto& config     = MoneyConfig::get();
                             auto        currencyIt = config.currencies.find(currencyId);
                             std::string currencyName =
                                 currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -406,7 +406,7 @@ void Commands::registerCommands() {
                         break;
                     }
 
-                    auto&       config     = ConfigManager::getInstance().getConfig();
+                    const auto& config     = MoneyConfig::get();
                     auto        currencyIt = config.currencies.find(currencyId);
                     std::string currencyName =
                         currencyIt != config.currencies.end() ? currencyIt->second.name : currencyId;
@@ -430,7 +430,7 @@ void Commands::registerCommands() {
                         break;
                     }
 
-                    ConfigManager::getInstance().setInitialBalance(param.Amount);
+                    MoneyConfig::setInitialBalance(param.Amount);
                     player->sendMessage(fmt::format("§a成功设置初始金额为 §6{} 金币", param.Amount));
                     break;
                 }
@@ -439,7 +439,7 @@ void Commands::registerCommands() {
                     auto player = validatePlayer();
                     if (!player) break;
 
-                    auto initialBalance = ConfigManager::getInstance().getInitialBalance();
+                    auto initialBalance = MoneyConfig::getInitialBalance();
                     player->sendMessage(fmt::format("§a当前初始金额为 §6{} 金币", initialBalance));
                     break;
                 }
@@ -449,7 +449,7 @@ void Commands::registerCommands() {
                     if (!player) break;
 
                     try {
-                        ConfigManager::getInstance().reloadConfig();
+                        MoneyConfig::reload();
                         // 同步配置文件中的币种到数据库（新增币种会被创建，已有币种的信息会被更新）
                         if (EconomyManager::getInstance().syncCurrenciesFromConfig()) {
                             player->sendMessage("§a配置已重新加载并同步到数据库");
@@ -493,7 +493,7 @@ void Commands::registerCommands() {
                 return;
             }
 
-            auto& config = ConfigManager::getInstance().getConfig();
+            const auto& config = MoneyConfig::get();
 
             try {
                 switch (param.Operation) {

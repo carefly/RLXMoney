@@ -1,5 +1,5 @@
 #include "mocks/MockLeviLaminaAPI.h"
-#include "mod/config/ConfigManager.h"
+#include "mod/config/MoneyConfig.h"
 #include "mod/core/SystemInitializer.h"
 #include <RLXMoney/data/DataStructures.h>
 #include "mod/database/DatabaseManager.h"
@@ -65,17 +65,20 @@ std::pair<std::string, std::string> setupIsolatedManager(
     testConfig["top_list"]["default_count"] = defaultTopCount;
     testConfig["top_list"]["max_count"]     = maxTopCount;
 
+    // 新的配置系统使用 "RLXMoney" 节点作为顶层
+    nlohmann::json finalConfig;
+    finalConfig["RLXMoney"] = testConfig;
+
     std::ofstream configFile(configPath);
-    configFile << testConfig.dump(4);
+    configFile << finalConfig.dump(4);
     configFile.close();
 
     // 注册文件以便自动清理
     rlx_money::test::TestTempManager::getInstance().registerFile(configPath);
     rlx_money::test::TestTempManager::getInstance().registerFile(dbPath);
 
-    auto& configManager = rlx_money::ConfigManager::getInstance();
-    REQUIRE_NOTHROW(configManager.loadConfig(configPath));
-    REQUIRE_NOTHROW(configManager.reloadConfig());
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(configPath));
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::reload());
 
     auto& manager = rlx_money::EconomyManager::getInstance();
     REQUIRE(manager.initialize());
@@ -93,7 +96,7 @@ void cleanupFiles(const std::vector<std::string>& paths) {
 void ensureDatabaseInitialized() {
     auto& dbManager = rlx_money::DatabaseManager::getInstance();
     if (!dbManager.isInitialized()) {
-        auto& config = rlx_money::ConfigManager::getInstance().getConfig();
+        const auto& config = rlx_money::MoneyConfig::get();
         REQUIRE(dbManager.initialize(config.database.path));
     }
     auto& manager = rlx_money::EconomyManager::getInstance();
@@ -144,9 +147,8 @@ void cleanupSingletonState() {
             dbManager.close();
         }
 
-        // 重置 ConfigManager 的配置状态
-        auto& configManager = rlx_money::ConfigManager::getInstance();
-        configManager.resetForTesting();
+        // 重置 MoneyConfig 的配置状态
+        rlx_money::MoneyConfig::resetForTesting();
     }
 
     // 清理 Mock 玩家数据
@@ -243,8 +245,7 @@ TEST_CASE("经济管理器 - Mock 测试", "[economy][mock][levilamina]") {
 TEST_CASE("EconomyManager 初始化测试", "[economy][manager][init]") {
     auto cleanupGuard = SingletonCleanupGuard{};
     // 为测试设置临时配置
-    auto& tempManager   = rlx_money::test::TestTempManager::getInstance();
-    auto& configManager = rlx_money::ConfigManager::getInstance();
+    auto& tempManager = rlx_money::test::TestTempManager::getInstance();
 
     std::string testConfigPath = tempManager.makeUniquePath("test_economy_config", ".json");
     std::string testDbPath     = tempManager.makeUniquePath("test_economy_manager", ".db");
@@ -255,34 +256,35 @@ TEST_CASE("EconomyManager 初始化测试", "[economy][manager][init]") {
 
     // 创建测试配置（使用新的配置格式，所有字段都在 currencies["gold"] 节点下，使用驼峰命名）
     nlohmann::json testConfig;
-    testConfig["database"]["path"]                        = testDbPath;
-    testConfig["database"]["optimization"]["wal_mode"]    = true;
-    testConfig["database"]["optimization"]["cache_size"]  = 2000;
-    testConfig["database"]["optimization"]["synchronous"] = "NORMAL";
-    testConfig["defaultCurrency"]                         = "gold";
+    testConfig["RLXMoney"]["database"]["path"]                        = testDbPath;
+    testConfig["RLXMoney"]["database"]["optimization"]["walMode"]     = true;
+    testConfig["RLXMoney"]["database"]["optimization"]["cacheSize"]   = 2000;
+    testConfig["RLXMoney"]["database"]["optimization"]["synchronous"] = "NORMAL";
+    testConfig["RLXMoney"]["defaultCurrency"]                         = "gold";
 
     // 创建默认币种配置
-    testConfig["currencies"]["gold"]["name"]                = "金币";
-    testConfig["currencies"]["gold"]["symbol"]              = "G";
-    testConfig["currencies"]["gold"]["displayFormat"]       = "{amount} {symbol}";
-    testConfig["currencies"]["gold"]["enabled"]             = true;
-    testConfig["currencies"]["gold"]["initialBalance"]      = 1000;
-    testConfig["currencies"]["gold"]["maxBalance"]          = 1000000;
-    testConfig["currencies"]["gold"]["minTransferAmount"]   = 1;
-    testConfig["currencies"]["gold"]["transferFee"]         = 0;
-    testConfig["currencies"]["gold"]["feePercentage"]       = 0.0;
-    testConfig["currencies"]["gold"]["allowPlayerTransfer"] = true;
+    testConfig["RLXMoney"]["currencies"]["gold"]["currencyId"]        = "gold";
+    testConfig["RLXMoney"]["currencies"]["gold"]["name"]              = "金币";
+    testConfig["RLXMoney"]["currencies"]["gold"]["symbol"]            = "G";
+    testConfig["RLXMoney"]["currencies"]["gold"]["displayFormat"]     = "{amount} {symbol}";
+    testConfig["RLXMoney"]["currencies"]["gold"]["enabled"]           = true;
+    testConfig["RLXMoney"]["currencies"]["gold"]["initialBalance"]    = 1000;
+    testConfig["RLXMoney"]["currencies"]["gold"]["maxBalance"]        = 1000000;
+    testConfig["RLXMoney"]["currencies"]["gold"]["minTransferAmount"] = 1;
+    testConfig["RLXMoney"]["currencies"]["gold"]["transferFee"]       = 0;
+    testConfig["RLXMoney"]["currencies"]["gold"]["feePercentage"]     = 0.0;
+    testConfig["RLXMoney"]["currencies"]["gold"]["allowPlayerTransfer"] = true;
 
-    testConfig["top_list"]["default_count"] = 10;
-    testConfig["top_list"]["max_count"]     = 50;
+    testConfig["RLXMoney"]["topList"]["defaultCount"] = 10;
+    testConfig["RLXMoney"]["topList"]["maxCount"]     = 50;
 
     std::ofstream configFile(testConfigPath);
     configFile << testConfig.dump(4);
     configFile.close();
 
     // 先加载配置设置路径，然后重新加载配置
-    REQUIRE_NOTHROW(configManager.loadConfig(testConfigPath));
-    REQUIRE_NOTHROW(configManager.reloadConfig());
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::reload());
 
     auto& manager = rlx_money::EconomyManager::getInstance();
 
@@ -315,8 +317,7 @@ TEST_CASE("EconomyManager 玩家管理测试", "[economy][manager][player]") {
     }
 
     // 为测试设置临时配置
-    auto& tempManager   = rlx_money::test::TestTempManager::getInstance();
-    auto& configManager = rlx_money::ConfigManager::getInstance();
+    auto& tempManager = rlx_money::test::TestTempManager::getInstance();
 
     std::string testConfigPath = tempManager.makeUniquePath("test_economy_player_config", ".json");
     std::string testDbPath     = tempManager.makeUniquePath("test_economy_player", ".db");
@@ -325,36 +326,37 @@ TEST_CASE("EconomyManager 玩家管理测试", "[economy][manager][player]") {
     tempManager.registerFile(testConfigPath);
     tempManager.registerFile(testDbPath);
 
-    // 创建测试配置（使用新的配置格式，所有字段都在 currencies["gold"] 节点下）
+    // 创建测试配置（使用新的配置格式，所有字段都在 RLXMoney 节点下）
     nlohmann::json testConfig;
-    testConfig["database"]["path"]                        = testDbPath;
-    testConfig["database"]["optimization"]["wal_mode"]    = true;
-    testConfig["database"]["optimization"]["cache_size"]  = 2000;
-    testConfig["database"]["optimization"]["synchronous"] = "NORMAL";
-    testConfig["defaultCurrency"]                         = "gold";
+    testConfig["RLXMoney"]["database"]["path"]                        = testDbPath;
+    testConfig["RLXMoney"]["database"]["optimization"]["walMode"]     = true;
+    testConfig["RLXMoney"]["database"]["optimization"]["cacheSize"]   = 2000;
+    testConfig["RLXMoney"]["database"]["optimization"]["synchronous"] = "NORMAL";
+    testConfig["RLXMoney"]["defaultCurrency"]                         = "gold";
 
     // 创建默认币种配置
-    testConfig["currencies"]["gold"]["name"]                = "金币";
-    testConfig["currencies"]["gold"]["symbol"]              = "G";
-    testConfig["currencies"]["gold"]["displayFormat"]       = "{amount} {symbol}";
-    testConfig["currencies"]["gold"]["enabled"]             = true;
-    testConfig["currencies"]["gold"]["initialBalance"]      = 1000;
-    testConfig["currencies"]["gold"]["maxBalance"]          = 1000000;
-    testConfig["currencies"]["gold"]["minTransferAmount"]   = 1;
-    testConfig["currencies"]["gold"]["transferFee"]         = 0;
-    testConfig["currencies"]["gold"]["feePercentage"]       = 0.0;
-    testConfig["currencies"]["gold"]["allowPlayerTransfer"] = true;
+    testConfig["RLXMoney"]["currencies"]["gold"]["currencyId"]        = "gold";
+    testConfig["RLXMoney"]["currencies"]["gold"]["name"]              = "金币";
+    testConfig["RLXMoney"]["currencies"]["gold"]["symbol"]            = "G";
+    testConfig["RLXMoney"]["currencies"]["gold"]["displayFormat"]     = "{amount} {symbol}";
+    testConfig["RLXMoney"]["currencies"]["gold"]["enabled"]           = true;
+    testConfig["RLXMoney"]["currencies"]["gold"]["initialBalance"]    = 1000;
+    testConfig["RLXMoney"]["currencies"]["gold"]["maxBalance"]        = 1000000;
+    testConfig["RLXMoney"]["currencies"]["gold"]["minTransferAmount"] = 1;
+    testConfig["RLXMoney"]["currencies"]["gold"]["transferFee"]       = 0;
+    testConfig["RLXMoney"]["currencies"]["gold"]["feePercentage"]     = 0.0;
+    testConfig["RLXMoney"]["currencies"]["gold"]["allowPlayerTransfer"] = true;
 
-    testConfig["top_list"]["default_count"] = 10;
-    testConfig["top_list"]["max_count"]     = 50;
+    testConfig["RLXMoney"]["topList"]["defaultCount"] = 10;
+    testConfig["RLXMoney"]["topList"]["maxCount"]     = 50;
 
     std::ofstream configFile(testConfigPath);
     configFile << testConfig.dump(4);
     configFile.close();
 
     // 先加载配置设置路径，然后重新加载配置
-    REQUIRE_NOTHROW(configManager.loadConfig(testConfigPath));
-    REQUIRE_NOTHROW(configManager.reloadConfig());
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
+    REQUIRE_NOTHROW(rlx_money::MoneyConfig::reload());
 
     auto& manager = rlx_money::EconomyManager::getInstance();
     REQUIRE(manager.initialize());

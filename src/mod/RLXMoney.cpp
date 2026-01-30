@@ -1,7 +1,7 @@
 #include "mod/RLXMoney.h"
 #include "ll/api/mod/RegisterHelper.h"
 #include "mod/commands/Commands.h"
-#include "mod/config/ConfigManager.h"
+#include "mod/config/MoneyConfig.h"
 #include "mod/core/SystemInitializer.h"
 #include "mod/database/DatabaseManager.h"
 #include "mod/economy/EconomyManager.h"
@@ -88,11 +88,11 @@ bool RLXMoney::initializeComponents() const {
     try {
         // 初始化配置管理器
         logger.info("初始化配置管理器...");
-        ConfigManager::getInstance().loadConfig("plugins/RLXModeResources/data/money/config.json");
+        MoneyConfig::initialize();
 
         // 初始化数据库管理器
         logger.info("初始化数据库管理器...");
-        auto& config = ConfigManager::getInstance().getConfig();
+        const auto& config = MoneyConfig::get();
         if (!DatabaseManager::getInstance().initialize(config.database.path)) {
             logger.error("数据库初始化失败");
             return false;

@@ -1,5 +1,5 @@
 #include "mod/economy/EconomyManager.h"
-#include "mod/config/ConfigManager.h"
+#include "mod/config/MoneyConfig.h"
 #include "mod/database/DatabaseManager.h"
 #include "mod/exceptions/MoneyException.h"
 #include <RLXMoney/types/Types.h>
@@ -19,7 +19,7 @@ EconomyManager::EconomyManager()
     // 构造函数中初始化依赖的单例，确保依赖关系正确
     try {
         // 确保依赖的单例已初始化
-        ConfigManager::getInstance();
+        (void)MoneyConfig::get(); // 确保配置已初始化
         DatabaseManager::getInstance();
     } catch (const std::exception&) {
         // 依赖初始化失败，抛出异常
@@ -42,7 +42,7 @@ bool EconomyManager::initialize() {
 
     try {
         // 读取配置并确保数据库已初始化
-        auto& config = ConfigManager::getInstance().getConfig();
+        const auto& config = MoneyConfig::get();
 
         auto& dbManager = DatabaseManager::getInstance();
         if (!dbManager.isInitialized()) {
@@ -111,7 +111,7 @@ bool EconomyManager::setBalance(
         }
 
         // 获取币种配置，检查最大余额限制
-        auto& config     = ConfigManager::getInstance().getConfig();
+        const auto& config     = MoneyConfig::get();
         auto  currencyIt = config.currencies.find(currencyId);
         if (currencyIt == config.currencies.end()) {
             throw InvalidArgumentException("币种配置不存在: " + currencyId);
@@ -162,7 +162,7 @@ bool EconomyManager::addMoney(
 
     try {
         // 获取币种配置
-        auto& config     = ConfigManager::getInstance().getConfig();
+        const auto& config     = MoneyConfig::get();
         auto  currencyIt = config.currencies.find(currencyId);
         if (currencyIt == config.currencies.end()) {
             throw InvalidArgumentException("币种配置不存在: " + currencyId);
@@ -301,7 +301,7 @@ bool EconomyManager::transferMoney(
 
     try {
         // 获取币种配置
-        auto& config     = ConfigManager::getInstance().getConfig();
+        const auto& config     = MoneyConfig::get();
         auto  currencyIt = config.currencies.find(currencyId);
         if (currencyIt == config.currencies.end()) {
             throw InvalidArgumentException("币种配置不存在: " + currencyId);
@@ -467,7 +467,7 @@ bool EconomyManager::initializeNewPlayer(const std::string& xuid, const std::str
                 }
 
                 // 2.2 为所有启用的币种初始化余额和交易记录
-                auto& config = ConfigManager::getInstance().getConfig();
+                const auto& config = MoneyConfig::get();
                 for (const auto& [currencyId, currency] : config.currencies) {
                     if (currency.enabled) {
                         // 直接在事务中执行余额初始化（player_balances表）
@@ -632,7 +632,7 @@ bool EconomyManager::setBalance(
         }
 
         // 获取币种配置，检查最大余额限制
-        auto& config     = ConfigManager::getInstance().getConfig();
+        const auto& config     = MoneyConfig::get();
         auto  currencyIt = config.currencies.find(currencyId);
         if (currencyIt == config.currencies.end()) {
             throw InvalidArgumentException("币种配置不存在: " + currencyId);
@@ -694,7 +694,7 @@ bool EconomyManager::addMoney(
 
     try {
         // 获取币种配置
-        auto& config     = ConfigManager::getInstance().getConfig();
+        const auto& config     = MoneyConfig::get();
         auto  currencyIt = config.currencies.find(currencyId);
         if (currencyIt == config.currencies.end()) {
             throw InvalidArgumentException("币种配置不存在: " + currencyId);
@@ -834,7 +834,7 @@ int64_t EconomyManager::getCurrentTimestamp() const {
 }
 
 std::string EconomyManager::getDefaultCurrencyId() const {
-    return ConfigManager::getInstance().getConfig().defaultCurrency;
+    return MoneyConfig::get().defaultCurrency;
 }
 
 bool EconomyManager::syncCurrenciesFromConfig() {
@@ -848,8 +848,8 @@ bool EconomyManager::isValidCurrency(const std::string& currencyId) const {
         return false;
     }
     // 从配置文件检查币种是否存在且启用
-    auto& config     = ConfigManager::getInstance().getConfig();
-    auto  currencyIt = config.currencies.find(currencyId);
+    const auto& config     = MoneyConfig::get();
+    auto        currencyIt = config.currencies.find(currencyId);
     return currencyIt != config.currencies.end() && currencyIt->second.enabled;
 }
 
