@@ -1,6 +1,7 @@
 #include "mod/database/DatabaseManager.h"
 #include "mod/exceptions/MoneyException.h"
 #include <SQLiteCpp/Exception.h>
+#include <filesystem>
 
 namespace rlx_money {
 
@@ -26,6 +27,13 @@ bool DatabaseManager::initialize(const std::string& dbPath) {
 
         // 首次初始化
         mDatabasePath = dbPath;
+
+        // 确保数据库文件所在目录存在
+        std::filesystem::path dbFilePath(dbPath);
+        std::filesystem::path dbDir = dbFilePath.parent_path();
+        if (!dbDir.empty() && !std::filesystem::exists(dbDir)) {
+            std::filesystem::create_directories(dbDir);
+        }
 
         // 创建数据库连接
         mDatabase = std::make_unique<SQLite::Database>(dbPath, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
