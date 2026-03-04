@@ -1,13 +1,13 @@
-#include "mod/config/MoneyConfig.h"
 #include "mod/config/ConfigStructures.h"
+#include "mod/config/MoneyConfig.h"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
-#include <filesystem>
 #include <fstream>
+
 
 TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
     // 使用临时文件管理器创建测试配置路径
-    auto& tempManager = rlx_money::test::TestTempManager::getInstance();
+    auto&             tempManager    = rlx_money::test::TestTempManager::getInstance();
     const std::string testConfigPath = tempManager.makeUniquePath("test_auto_complete", ".json");
 
     // 注册文件以便自动清理
@@ -24,7 +24,6 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
                         "currencyId": "gold",
                         "name": "金币",
                         "symbol": "G",
-                        "displayFormat": "{amount} {symbol}",
                         "enabled": true,
                         "initialBalance": 5000
                     }
@@ -57,7 +56,6 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         REQUIRE(content.find("\"allowPlayerTransfer\"") != std::string::npos);
         REQUIRE(content.find("\"minTransferAmount\"") != std::string::npos);
         REQUIRE(content.find("\"database\"") != std::string::npos);
-        REQUIRE(content.find("\"topList\"") != std::string::npos);
 
         // 清理
         rlx_money::MoneyConfig::resetForTesting();
@@ -88,7 +86,6 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         REQUIRE(content.find("\"defaultCurrency\"") != std::string::npos);
         REQUIRE(content.find("\"currencies\"") != std::string::npos);
         REQUIRE(content.find("\"database\"") != std::string::npos);
-        REQUIRE(content.find("\"topList\"") != std::string::npos);
         REQUIRE(content.find("\"initialBalance\"") != std::string::npos);
         REQUIRE(content.find("\"maxBalance\"") != std::string::npos);
         REQUIRE(content.find("\"allowPlayerTransfer\"") != std::string::npos);
@@ -109,7 +106,6 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
                         "currencyId": "gold",
                         "name": "金币",
                         "symbol": "G",
-                        "displayFormat": "{amount} {symbol}",
                         "enabled": true,
                         "initialBalance": 2000,
                         "maxBalance": 5000000,
@@ -120,16 +116,7 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
                     }
                 },
                 "database": {
-                    "path": "custom_money.db",
-                    "optimization": {
-                        "walMode": false,
-                        "cacheSize": 5000,
-                        "synchronous": "FULL"
-                    }
-                },
-                "topList": {
-                    "defaultCount": 20,
-                    "maxCount": 100
+                    "path": "custom_money.db"
                 }
             }
         })";

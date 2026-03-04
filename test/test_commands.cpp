@@ -19,17 +19,12 @@ std::string makeUniquePath(const std::string& prefix, const std::string& extensi
 // 为每个 TEST_CASE 创建独立配置与数据库，并完成初始化
 std::pair<std::string, std::string> setupIsolatedManager(
     const std::string& caseName,
-    bool               walMode             = true,
-    int                cacheSize           = 2000,
-    const std::string& synchronous         = "NORMAL",
     int64_t            initialBalance      = 1000,
     int64_t            maxBalance          = 1000000,
     int64_t            minTransferAmount   = 1,
     int64_t            transferFee         = 0,
     double             feePercentage       = 0.0,
-    bool               allowPlayerTransfer = true,
-    int                defaultTopCount     = 10,
-    int                maxTopCount         = 50
+    bool               allowPlayerTransfer = true
 ) {
     // 关闭之前的数据库连接，确保每个测试用例使用独立的数据库实例
     auto& dbManager = rlx_money::DatabaseManager::getInstance();
@@ -41,16 +36,12 @@ std::pair<std::string, std::string> setupIsolatedManager(
     auto dbPath     = makeUniquePath("test_" + caseName, ".db");
 
     nlohmann::json testConfig;
-    testConfig["database"]["path"]                        = dbPath;
-    testConfig["database"]["optimization"]["wal_mode"]    = walMode;
-    testConfig["database"]["optimization"]["cache_size"]  = cacheSize;
-    testConfig["database"]["optimization"]["synchronous"] = synchronous;
-    testConfig["defaultCurrency"]                         = "gold";
+    testConfig["database"]["path"] = dbPath;
+    testConfig["defaultCurrency"]  = "gold";
 
     // 创建默认币种配置
     testConfig["currencies"]["gold"]["name"]                = "金币";
     testConfig["currencies"]["gold"]["symbol"]              = "G";
-    testConfig["currencies"]["gold"]["displayFormat"]       = "{amount} {symbol}";
     testConfig["currencies"]["gold"]["enabled"]             = true;
     testConfig["currencies"]["gold"]["initialBalance"]      = initialBalance;
     testConfig["currencies"]["gold"]["maxBalance"]          = maxBalance;
@@ -58,9 +49,6 @@ std::pair<std::string, std::string> setupIsolatedManager(
     testConfig["currencies"]["gold"]["transferFee"]         = transferFee;
     testConfig["currencies"]["gold"]["feePercentage"]       = feePercentage;
     testConfig["currencies"]["gold"]["allowPlayerTransfer"] = allowPlayerTransfer;
-
-    testConfig["top_list"]["default_count"] = defaultTopCount;
-    testConfig["top_list"]["max_count"]     = maxTopCount;
 
     // 新的配置系统使用 "RLXMoney" 节点作为顶层
     nlohmann::json finalConfig;

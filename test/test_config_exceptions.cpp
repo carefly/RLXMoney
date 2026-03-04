@@ -46,7 +46,6 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
                         "currencyId": "gold",
                         "name": "金币",
                         "symbol": "G",
-                        "displayFormat": "{amount} {symbol}",
                         "enabled": true,
                         "initialBalance": 1000,
                         "maxBalance": 1000000,
@@ -112,7 +111,6 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
                         "currencyId": "gold",
                         "name": "金币",
                         "symbol": "G",
-                        "displayFormat": "{amount} {symbol}",
                         "enabled": true,
                         "initialBalance": 500,
                         "maxBalance": 10000
@@ -137,7 +135,6 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
                         "currencyId": "gold",
                         "name": "金币",
                         "symbol": "G",
-                        "displayFormat": "{amount} {symbol}",
                         "enabled": true,
                         "initialBalance": 2000,
                         "maxBalance": 50000
@@ -169,7 +166,6 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
                         "currencyId": "gold",
                         "name": "金币",
                         "symbol": "G",
-                        "displayFormat": "{amount} {symbol}",
                         "enabled": true,
                         "initialBalance": 500,
                         "maxBalance": 10000,

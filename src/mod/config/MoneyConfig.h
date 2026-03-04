@@ -59,14 +59,10 @@ public:
     }
 
     /// @brief 获取配置（只读）
-    static const MoneyConfigData& get() {
-        return getOrCreateConfig().get();
-    }
+    static const MoneyConfigData& get() { return getOrCreateConfig().get(); }
 
     /// @brief 获取配置（可写）- 修改后需要调用 save() 保存
-    static MoneyConfigData& getWritable() {
-        return getOrCreateConfig().get();
-    }
+    static MoneyConfigData& getWritable() { return getOrCreateConfig().get(); }
 
     /// @brief 保存配置到文件
     static void save() {
@@ -85,9 +81,7 @@ public:
     }
 
     /// @brief 获取配置文件路径
-    static const std::string& getConfigPath() {
-        return rlx::common::ConfigManager::getConfigPath();
-    }
+    static const std::string& getConfigPath() { return rlx::common::ConfigManager::getConfigPath(); }
 
     /// @brief 设置初始金额（默认币种）
     static void setInitialBalance(int amount) {
@@ -147,9 +141,7 @@ private:
     }
 
     /// @brief 获取配置引用（用于重置）
-    static rlx::common::Config<MoneyConfigData>& getConfigRef() {
-        return getOrCreateConfig();
-    }
+    static rlx::common::Config<MoneyConfigData>& getConfigRef() { return getOrCreateConfig(); }
 
     /// @brief 创建默认配置
     static void createDefaultConfig() {
@@ -160,7 +152,6 @@ private:
         gold.currencyId          = "gold";
         gold.name                = "金币";
         gold.symbol              = "G";
-        gold.displayFormat       = "{amount} {symbol}";
         gold.enabled             = true;
         gold.initialBalance      = 1000;
         gold.maxBalance          = std::numeric_limits<int>::max(); // 0 表示无限制，内部使用 INT_MAX
@@ -177,8 +168,6 @@ private:
 };
 
 /// @brief 便捷函数：获取金钱配置
-inline const MoneyConfigData& getMoneyConfig() {
-    return MoneyConfig::get();
-}
+inline const MoneyConfigData& getMoneyConfig() { return MoneyConfig::get(); }
 
 } // namespace rlx_money

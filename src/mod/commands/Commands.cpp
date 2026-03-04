@@ -530,7 +530,6 @@ void Commands::registerCommands() {
                     player->sendMessage(fmt::format("§a币种信息：§b{}", currencyId));
                     player->sendMessage(fmt::format("§7- 名称: §b{}", currency.name));
                     player->sendMessage(fmt::format("§7- 符号: §6{}", currency.symbol));
-                    player->sendMessage(fmt::format("§7- 显示格式: §f{}", currency.displayFormat));
                     player->sendMessage(fmt::format("§7- 状态: {}", currency.enabled ? "§a启用" : "§c禁用"));
                     player->sendMessage(fmt::format("§7- 初始余额: §6{}", currency.initialBalance));
                     player->sendMessage(fmt::format("§7- 最大余额: §6{}", currency.maxBalance));
