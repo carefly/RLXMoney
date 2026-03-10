@@ -430,7 +430,11 @@ void Commands::registerCommands() {
                         break;
                     }
 
-                    MoneyConfig::setInitialBalance(param.Amount);
+                    {
+                        auto& config = MoneyConfig::getWritable();
+                        config.currencies[config.defaultCurrency].initialBalance = param.Amount;
+                        MoneyConfig::save();
+                    }
                     player->sendMessage(fmt::format("§a成功设置初始金额为 §6{} 金币", param.Amount));
                     break;
                 }
@@ -439,7 +443,8 @@ void Commands::registerCommands() {
                     auto player = validatePlayer();
                     if (!player) break;
 
-                    auto initialBalance = MoneyConfig::getInitialBalance();
+                    const auto& config = MoneyConfig::get();
+                    auto initialBalance = config.currencies.at(config.defaultCurrency).initialBalance;
                     player->sendMessage(fmt::format("§a当前初始金额为 §6{} 金币", initialBalance));
                     break;
                 }

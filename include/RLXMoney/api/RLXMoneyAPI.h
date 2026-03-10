@@ -134,9 +134,10 @@ public:
     [[nodiscard]] static std::string getDefaultCurrencyId();
 
     /// @brief 初始化系统（加载配置、初始化数据库等）
-    /// @param configPath 配置文件路径
+    /// @param configName 配置文件名（仅文件名，默认 "rlx_money.json"）
+    ///                    配置文件将自动放置在固定路径：plugins/RLXModeResources/config/{configName}
     /// @return 是否初始化成功
-    static bool initialize(const std::string& configPath);
+    static bool initialize(const std::string& configName = "rlx_money.json");
 
     /// @brief 检查系统是否已初始化
     /// @return 是否已初始化

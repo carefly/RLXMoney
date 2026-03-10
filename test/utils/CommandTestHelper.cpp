@@ -285,7 +285,9 @@ bool CommandTestHelper::testAdminSetInitialCommand(
         if (amount < 0) {
             return !expectSuccess;
         }
-        rlx_money::MoneyConfig::setInitialBalance(amount);
+        auto& config = rlx_money::MoneyConfig::getWritable();
+        config.currencies[config.defaultCurrency].initialBalance = amount;
+        rlx_money::MoneyConfig::save();
         return expectSuccess;
     } catch (...) {
         return !expectSuccess;
@@ -299,7 +301,8 @@ bool CommandTestHelper::testAdminGetInitialCommand(const std::string& adminXuid,
     }
 
     try {
-        (void)rlx_money::MoneyConfig::getInitialBalance(); // 验证可以获取初始金额
+        (void)rlx_money::MoneyConfig::get().currencies.at(
+            rlx_money::MoneyConfig::get().defaultCurrency).initialBalance;
         return true;
     } catch (...) {
         return false;

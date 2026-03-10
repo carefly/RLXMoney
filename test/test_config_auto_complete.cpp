@@ -6,6 +6,9 @@
 
 
 TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
+    // 每个测试开始前确保配置单例已重置
+    rlx_money::MoneyConfig::resetForTesting();
+
     // 使用临时文件管理器创建测试配置路径
     auto&             tempManager    = rlx_money::test::TestTempManager::getInstance();
     const std::string testConfigPath = tempManager.makeUniquePath("test_auto_complete", ".json");
@@ -14,19 +17,17 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
     tempManager.registerFile(testConfigPath);
 
     SECTION("部分配置自动补全") {
-        // 创建只包含部分配置的配置文件（所有字段在 currencies["gold"] 节点下，使用驼峰命名）
+        // 创建只包含部分配置的配置文件（新格式：直接是配置对象）
         std::ofstream configFile(testConfigPath);
         configFile << R"({
-            "RLXMoney": {
-                "defaultCurrency": "gold",
-                "currencies": {
-                    "gold": {
-                        "currencyId": "gold",
-                        "name": "金币",
-                        "symbol": "G",
-                        "enabled": true,
-                        "initialBalance": 5000
-                    }
+            "defaultCurrency": "gold",
+            "currencies": {
+                "gold": {
+                    "currencyId": "gold",
+                    "name": "金币",
+                    "symbol": "G",
+                    "enabled": true,
+                    "initialBalance": 5000
                 }
             }
         })";
@@ -49,7 +50,7 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         std::string   content((std::istreambuf_iterator<char>(updatedFile)), std::istreambuf_iterator<char>());
         updatedFile.close();
 
-        // 验证补全的配置项存在于文件中（使用驼峰命名，所有字段在 currencies 节点下）
+        // 验证补全的配置项存在于文件中
         REQUIRE(content.find("\"defaultCurrency\"") != std::string::npos);
         REQUIRE(content.find("\"currencies\"") != std::string::npos);
         REQUIRE(content.find("\"maxBalance\"") != std::string::npos);
@@ -96,28 +97,26 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
     }
 
     SECTION("完整配置文件不应被修改") {
-        // 创建完整的配置文件（所有字段在 currencies["gold"] 节点下，使用驼峰命名）
+        // 创建完整的配置文件（新格式：直接是配置对象）
         std::ofstream configFile(testConfigPath);
         configFile << R"({
-            "RLXMoney": {
-                "defaultCurrency": "gold",
-                "currencies": {
-                    "gold": {
-                        "currencyId": "gold",
-                        "name": "金币",
-                        "symbol": "G",
-                        "enabled": true,
-                        "initialBalance": 2000,
-                        "maxBalance": 5000000,
-                        "minTransferAmount": 10,
-                        "transferFee": 5,
-                        "feePercentage": 1.5,
-                        "allowPlayerTransfer": false
-                    }
-                },
-                "database": {
-                    "path": "custom_money.db"
+            "defaultCurrency": "gold",
+            "currencies": {
+                "gold": {
+                    "currencyId": "gold",
+                    "name": "金币",
+                    "symbol": "G",
+                    "enabled": true,
+                    "initialBalance": 2000,
+                    "maxBalance": 5000000,
+                    "minTransferAmount": 10,
+                    "transferFee": 5,
+                    "feePercentage": 1.5,
+                    "allowPlayerTransfer": false
                 }
+            },
+            "database": {
+                "path": "custom_money.db"
             }
         })";
         configFile.close();

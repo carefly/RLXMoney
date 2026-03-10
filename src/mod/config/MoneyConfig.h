@@ -7,10 +7,6 @@ namespace rlx_money {
 
 /// @brief RLXMoney 配置管理类（使用通用配置系统）
 ///
-/// 使用 rlx::common::Config<T> 实现强类型配置管理。
-/// 配置文件路径: plugins/RLXModeResources/config/config.json
-/// 配置节点名称: RLXMoney
-///
 /// 使用示例:
 /// @code
 /// // 初始化配置系统（在插件启动时调用一次）
@@ -20,11 +16,12 @@ namespace rlx_money {
 /// const auto& config = MoneyConfig::get();
 /// int initialBalance = config.currencies.at(config.defaultCurrency).initialBalance;
 ///
+/// // 修改配置
+/// MoneyConfig::getWritable().currencies["gold"].initialBalance = 2000;
+/// MoneyConfig::save();
+///
 /// // 重新加载配置
 /// MoneyConfig::reload();
-///
-/// // 保存配置
-/// MoneyConfig::save();
 ///
 /// // 重置配置（仅用于测试）
 /// MoneyConfig::resetForTesting();
@@ -32,138 +29,75 @@ namespace rlx_money {
 class MoneyConfig {
 public:
     /// @brief 初始化配置系统
-    /// @param configPath 配置文件路径（可选，默认为标准路径）
-    static void initialize(const std::string& configPath = "plugins/RLXModeResources/config/config.json") {
-        // 重置加载状态，强制重新加载配置文件
-        rlx::common::ConfigManager::resetLoaded();
+    /// @param fileNameOrPath 配置文件名或完整路径
+    ///                      - 文件名（不含路径分隔符）: 使用固定前缀 plugins/RLXModeResources/config/
+    ///                      - 完整路径（含路径分隔符）: 直接使用（用于测试）
+    ///                      - 默认值: "rlx_money.json" -> 实际路径: plugins/RLXModeResources/config/rlx_money.json
+    static void initialize(const std::string& fileNameOrPath = "rlx_money.json") {
+        // 检测是否包含路径分隔符
+        bool isFullPath = fileNameOrPath.find('/') != std::string::npos ||
+                          fileNameOrPath.find('\\') != std::string::npos;
 
-        // 设置配置路径和节点
-        rlx::common::ConfigManager::setConfigPath(configPath);
-        rlx::common::ConfigManager::setModSection("RLXMoney");
-
-        // 重新加载配置文件
-        auto& config = getOrCreateConfig();
-        config.load();
-
-        // 如果配置为空（文件不存在或为空），则创建默认配置
-        if (config.get().currencies.empty()) {
-            createDefaultConfig();
+        if (isFullPath) {
+            rlx::common::Config<MoneyConfigData>::init(fileNameOrPath);
         } else {
-            // 配置已加载，但文件可能只包含部分字段。
-            // 保存配置以确保文件包含所有字段（包括默认值）
-            config.save();
+            rlx::common::Config<MoneyConfigData>::initWithName(fileNameOrPath);
+        }
+        auto& config = rlx::common::Config<MoneyConfigData>::getInstance();
+
+        // 如果配置为空，创建默认配置
+        if (config->currencies.empty()) {
+            Currency gold;
+            gold.currencyId          = "gold";
+            gold.name                = "金币";
+            gold.symbol              = "G";
+            gold.enabled             = true;
+            gold.initialBalance      = 1000;
+            gold.maxBalance          = std::numeric_limits<int>::max();
+            gold.minTransferAmount   = 1;
+            gold.transferFee         = 0;
+            gold.feePercentage       = 0.0;
+            gold.allowPlayerTransfer = true;
+
+            config->defaultCurrency    = "gold";
+            config->currencies["gold"] = gold;
         }
 
-        // 验证配置
-        config.get().validate();
+        config->validate();
+        config.save();
     }
 
     /// @brief 获取配置（只读）
-    static const MoneyConfigData& get() { return getOrCreateConfig().get(); }
+    static const MoneyConfigData& get() {
+        return rlx::common::Config<MoneyConfigData>::getInstance().get();
+    }
 
-    /// @brief 获取配置（可写）- 修改后需要调用 save() 保存
-    static MoneyConfigData& getWritable() { return getOrCreateConfig().get(); }
+    /// @brief 获取配置（可写）
+    static MoneyConfigData& getWritable() {
+        return rlx::common::Config<MoneyConfigData>::getInstance().get();
+    }
 
-    /// @brief 保存配置到文件
+    /// @brief 保存配置
     static void save() {
-        // 保存前验证配置
-        getWritable().validate();
-        getOrCreateConfig().save();
+        auto& config = rlx::common::Config<MoneyConfigData>::getInstance();
+        config->validate();
+        config.save();
     }
 
     /// @brief 重新加载配置
     static void reload() {
-        // 重置加载状态，强制重新读取文件
-        rlx::common::ConfigManager::resetLoaded();
-        getOrCreateConfig().load();
-        // 重新加载后验证配置
+        rlx::common::Config<MoneyConfigData>::getInstance().reload();
         get().validate();
     }
 
     /// @brief 获取配置文件路径
-    static const std::string& getConfigPath() { return rlx::common::ConfigManager::getConfigPath(); }
-
-    /// @brief 设置初始金额（默认币种）
-    static void setInitialBalance(int amount) {
-        auto& config = getWritable();
-        if (config.currencies.find(config.defaultCurrency) == config.currencies.end()) {
-            throw std::runtime_error("默认币种不存在");
-        }
-        auto& currency = config.currencies[config.defaultCurrency];
-        if (amount < 0 || amount > currency.maxBalance) {
-            throw std::runtime_error("初始金额不合法");
-        }
-        currency.initialBalance = amount;
-        save();
-    }
-
-    /// @brief 获取初始金额（默认币种）
-    static int getInitialBalance() {
-        const auto& config = get();
-        if (config.currencies.find(config.defaultCurrency) == config.currencies.end()) {
-            return 1000; // 默认值
-        }
-        return config.currencies.at(config.defaultCurrency).initialBalance;
-    }
-
-    /// @brief 设置玩家转账是否允许（默认币种）
-    static void setAllowPlayerTransfer(bool allow) {
-        auto& config = getWritable();
-        if (config.currencies.find(config.defaultCurrency) == config.currencies.end()) {
-            throw std::runtime_error("默认币种不存在");
-        }
-        config.currencies[config.defaultCurrency].allowPlayerTransfer = allow;
-        save();
-    }
-
-    /// @brief 获取玩家转账是否允许（默认币种）
-    static bool getAllowPlayerTransfer() {
-        const auto& config = get();
-        if (config.currencies.find(config.defaultCurrency) == config.currencies.end()) {
-            return true; // 默认值
-        }
-        return config.currencies.at(config.defaultCurrency).allowPlayerTransfer;
+    static const std::string& getConfigPath() {
+        return rlx::common::Config<MoneyConfigData>::getInstance().getPath();
     }
 
     /// @brief 重置配置（仅用于测试）
     static void resetForTesting() {
-        // 重置 ConfigManager 的加载状态
-        rlx::common::ConfigManager::resetLoaded();
-        // 重置配置对象
-        getOrCreateConfig().reset();
-    }
-
-private:
-    /// @brief 获取或创建配置对象（内部使用）
-    static rlx::common::Config<MoneyConfigData>& getOrCreateConfig() {
-        static rlx::common::Config<MoneyConfigData> config("RLXMoney");
-        return config;
-    }
-
-    /// @brief 获取配置引用（用于重置）
-    static rlx::common::Config<MoneyConfigData>& getConfigRef() { return getOrCreateConfig(); }
-
-    /// @brief 创建默认配置
-    static void createDefaultConfig() {
-        auto& config = getWritable();
-
-        // 创建默认币种 "gold"
-        Currency gold;
-        gold.currencyId          = "gold";
-        gold.name                = "金币";
-        gold.symbol              = "G";
-        gold.enabled             = true;
-        gold.initialBalance      = 1000;
-        gold.maxBalance          = std::numeric_limits<int>::max(); // 0 表示无限制，内部使用 INT_MAX
-        gold.minTransferAmount   = 1;
-        gold.transferFee         = 0;
-        gold.feePercentage       = 0.0;
-        gold.allowPlayerTransfer = true;
-
-        config.defaultCurrency    = "gold";
-        config.currencies["gold"] = gold;
-
-        save();
+        rlx::common::Config<MoneyConfigData>::reset();
     }
 };
 

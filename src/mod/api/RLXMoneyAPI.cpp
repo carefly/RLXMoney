@@ -91,10 +91,10 @@ std::vector<std::string> RLXMoneyAPI::getEnabledCurrencyIds() {
 
 std::string RLXMoneyAPI::getDefaultCurrencyId() { return MoneyConfig::get().defaultCurrency; }
 
-bool RLXMoneyAPI::initialize(const std::string& configPath) {
+bool RLXMoneyAPI::initialize(const std::string& configName) {
     try {
-        // 1. 加载配置
-        MoneyConfig::initialize(configPath);
+        // 1. 加载配置（使用固定路径前缀）
+        MoneyConfig::initialize(configName);
 
         // 2. 初始化数据库
         const auto& config = MoneyConfig::get();

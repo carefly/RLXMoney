@@ -1,12 +1,11 @@
 #pragma once
 
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <stdexcept>
 #include <string>
 #include <vector>
-
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -14,273 +13,43 @@
 
 namespace rlx::common {
 
-/// @brief 通用配置管理器（头文件 Only，支持多 mod 共用）
-class ConfigManager {
-public:
-    // ==================== Mod 节点管理 ====================
+// ==================== 工具函数 ====================
 
-    /// @brief 设置当前 mod 的节点名称（并自动注册该节点）
-    static void setModSection(const std::string& section) {
-        getModSectionRef() = section;
-        registerSection(section);
-    }
+/// @brief 检查 DLL 是否存在
+inline bool checkDllExists(const std::string& dllName, const std::vector<std::string>& extraPaths = {}) {
+    std::vector<std::string> searchPaths = {
+        ".",
+        "plugins",
+        "../plugins",
+    };
+    searchPaths.insert(searchPaths.end(), extraPaths.begin(), extraPaths.end());
 
-    /// @brief 获取当前 mod 的节点名称
-    static const std::string& getModSection() { return getModSectionRef(); }
-
-    // ==================== 简化版 API（使用预设的 mod 节点） ====================
-
-    /// @brief 获取配置项（布尔值）- 使用预设的 mod 节点
-    static bool getBool(const std::string& key, bool defaultValue = false) {
-        return getBool(getModSection(), key, defaultValue);
-    }
-
-    /// @brief 获取配置项（整数）- 使用预设的 mod 节点
-    static int getInt(const std::string& key, int defaultValue = 0) {
-        return getInt(getModSection(), key, defaultValue);
-    }
-
-    /// @brief 获取配置项（字符串）- 使用预设的 mod 节点
-    static std::string getString(const std::string& key, const std::string& defaultValue = "") {
-        return getString(getModSection(), key, defaultValue);
-    }
-
-    /// @brief 设置配置项（布尔值）- 使用预设的 mod 节点
-    static void setBool(const std::string& key, bool value) { setBool(getModSection(), key, value); }
-
-    /// @brief 设置配置项（整数）- 使用预设的 mod 节点
-    static void setInt(const std::string& key, int value) { setInt(getModSection(), key, value); }
-
-    /// @brief 设置配置项（字符串）- 使用预设的 mod 节点
-    static void setString(const std::string& key, const std::string& value) { setString(getModSection(), key, value); }
-
-    // ==================== 完整版 API（需要指定节点） ====================
-    /// @brief 获取配置项（布尔值）
-    static bool getBool(const std::string& section, const std::string& key, bool defaultValue = false) {
-        ensureLoaded();
-        auto& cached = getCache();
-        if (cached.contains(section) && cached[section].contains(key)) {
-            try {
-                return cached[section][key].get<bool>();
-            } catch (...) {}
-        }
-        return defaultValue;
-    }
-
-    /// @brief 获取配置项（整数）
-    static int getInt(const std::string& section, const std::string& key, int defaultValue = 0) {
-        ensureLoaded();
-        auto& cached = getCache();
-        if (cached.contains(section) && cached[section].contains(key)) {
-            try {
-                return cached[section][key].get<int>();
-            } catch (...) {}
-        }
-        return defaultValue;
-    }
-
-    /// @brief 获取配置项（字符串）
-    static std::string
-    getString(const std::string& section, const std::string& key, const std::string& defaultValue = "") {
-        ensureLoaded();
-        auto& cached = getCache();
-        if (cached.contains(section) && cached[section].contains(key)) {
-            try {
-                return cached[section][key].get<std::string>();
-            } catch (...) {}
-        }
-        return defaultValue;
-    }
-
-    /// @brief 设置配置项（布尔值）
-    static void setBool(const std::string& section, const std::string& key, bool value) {
-        ensureLoaded();
-        getCache()[section][key] = value;
-        setDirty();
-    }
-
-    /// @brief 设置配置项（整数）
-    static void setInt(const std::string& section, const std::string& key, int value) {
-        ensureLoaded();
-        getCache()[section][key] = value;
-        setDirty();
-    }
-
-    /// @brief 设置配置项（字符串）
-    static void setString(const std::string& section, const std::string& key, const std::string& value) {
-        ensureLoaded();
-        getCache()[section][key] = value;
-        setDirty();
-    }
-
-    /// @brief 保存配置到文件
-    static bool save(const std::string& configPath = getConfigPath()) {
-        try {
-            std::ofstream outFile(configPath);
-            if (outFile.is_open()) {
-                outFile << getCache().dump(4);
-                outFile.close();
-                clearDirty();
-                return true;
-            }
-        } catch (...) {}
-        return false;
-    }
-
-    /// @brief 设置日志回调（用于输出日志）
-    using LogCallback = void (*)(const std::string& message);
-    static void setLogCallback(LogCallback callback) { getLogCallbackPtr() = callback; }
-
-    /// @brief 设置配置文件路径（需在首次访问前调用）
-    static void setConfigPath(const std::string& path) { getConfigPathRef() = path; }
-
-    /// @brief 注册配置节点（确保该节点在配置文件中存在）
-    static void registerSection(const std::string& section) {
-        ensureLoaded();
-        if (!getCache().contains(section) || !getCache()[section].is_object()) {
-            getCache()[section] = nlohmann::json::object();
-            save();
-        }
-    }
-
-    /// @brief 获取当前配置文件路径
-    static const std::string& getConfigPath() { return getConfigPathRef(); }
-
-    /// @brief 重置加载状态（强制下次访问时重新加载文件）
-    static void resetLoaded() {
-        isLoaded() = false;
-    }
-
-    /// @brief 检查 DLL 是否存在
-    static bool checkDllExists(const std::string& dllName, const std::vector<std::string>& extraPaths = {}) {
-        std::vector<std::string> searchPaths = {
-            ".",
-            "plugins",
-            "../plugins",
-        };
-        // 添加额外搜索路径
-        searchPaths.insert(searchPaths.end(), extraPaths.begin(), extraPaths.end());
-
-        for (const auto& basePath : searchPaths) {
-            std::filesystem::path dllPath = std::filesystem::path(basePath) / dllName;
-            if (std::filesystem::exists(dllPath) && std::filesystem::is_regular_file(dllPath)) {
-                return true;
-            }
-        }
-
-#ifdef _WIN32
-        HMODULE hModule = LoadLibraryA(dllName.c_str());
-        if (hModule != nullptr) {
-            FreeLibrary(hModule);
+    for (const auto& basePath : searchPaths) {
+        std::filesystem::path dllPath = std::filesystem::path(basePath) / dllName;
+        if (std::filesystem::exists(dllPath) && std::filesystem::is_regular_file(dllPath)) {
             return true;
         }
+    }
+
+#ifdef _WIN32
+    HMODULE hModule = LoadLibraryA(dllName.c_str());
+    if (hModule != nullptr) {
+        FreeLibrary(hModule);
+        return true;
+    }
 #endif
 
-        return false;
-    }
-
-private:
-    static inline std::string& getModSectionRef() {
-        static std::string section = "common";
-        return section;
-    }
-
-    static inline nlohmann::json& getCache() {
-        static nlohmann::json cache;
-        return cache;
-    }
-
-    // ==================== Config<T> 友元访问 ====================
-    template <typename U>
-    friend class Config;
-
-    static inline bool& isLoaded() {
-        static bool loaded = false;
-        return loaded;
-    }
-
-    static inline bool& isDirty() {
-        static bool dirty = false;
-        return dirty;
-    }
-
-    static inline std::string& getConfigPathRef() {
-        static std::string path = "plugins/RLXModeResources/config/config.json";
-        return path;
-    }
-
-    static inline LogCallback& getLogCallbackPtr() {
-        static LogCallback callback = nullptr;
-        return callback;
-    }
-
-    static void log(const std::string& message) {
-        if (auto cb = getLogCallbackPtr()) {
-            cb(message);
-        }
-    }
-
-    static void setDirty() { isDirty() = true; }
-
-    static void clearDirty() { isDirty() = false; }
-
-    static inline void ensureLoaded() {
-        if (!isLoaded()) {
-            loadFromFile();
-        }
-    }
-
-    static inline void loadFromFile() {
-        const std::string& configPath = getConfigPathRef();
-
-        // 确保配置目录存在
-        std::filesystem::path configFile(configPath);
-        std::filesystem::path configDir = configFile.parent_path();
-        if (!configDir.empty()) {
-            try {
-                std::filesystem::create_directories(configDir);
-            } catch (const std::exception& e) {
-                log(std::format("Failed to create config directory: {}", e.what()));
-            }
-        }
-
-        // 尝试加载配置文件
-        std::ifstream file(configPath);
-        bool          needWrite = false;
-
-        if (file.is_open()) {
-            try {
-                file >> getCache();
-                file.close();
-            } catch (const std::exception&) {
-                file.close();
-                log(std::format("Failed to parse config file {}, creating default", configPath));
-                getCache() = nlohmann::json::object();
-                needWrite  = true;
-            }
-        } else {
-            getCache() = nlohmann::json::object();
-            needWrite  = true;
-            log(std::format("Config file not found at {}, creating default", configPath));
-        }
-
-        // 如果需要写入，保存配置文件
-        if (needWrite) {
-            save();
-        }
-
-        isLoaded() = true;
-    }
-};
+    return false;
+}
 
 // ==================== 强类型配置模板 ====================
 
-/// @brief 强类型配置包装器
+/// @brief 强类型配置包装器（支持单例模式和独立实例）
 /// @tparam T 配置结构体类型
 ///
-/// 使用示例：
+/// 使用示例（单例模式）：
 /// @code
-/// // 1. 定义配置结构体（使用宏定义序列化）
+/// // 1. 定义配置结构体
 /// struct MyConfig {
 ///     bool enable = true;
 ///     int maxCount = 100;
@@ -288,97 +57,268 @@ private:
 /// };
 /// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MyConfig, enable, maxCount, name)
 ///
-/// // 2. 声明配置实例
-/// static Config<MyConfig> cfg("my_section");
+/// // 2. 初始化全局配置（在插件启动时调用一次）
+/// // 方式1: 使用固定路径前缀（推荐）
+/// Config<MyConfig>::initWithName("my_mod.json");  // 路径: plugins/RLXModeResources/config/my_mod.json
+///
+/// // 方式2: 使用完整路径（用于测试或自定义路径）
+/// Config<MyConfig>::init("custom/path/to/config.json");
 ///
 /// // 3. 使用配置
-/// if (cfg->enable) { ... }  // 读
-/// cfg->maxCount = 200;      // 写
-/// cfg.save();               // 保存（析构时也会自动保存）
+/// if (Config<MyConfig>::getInstance()->enable) { ... }  // 读
+/// Config<MyConfig>::getInstance()->maxCount = 200;      // 写
+/// Config<MyConfig>::getInstance().save();               // 保存
+///
+/// // 4. 重置配置（测试用）
+/// Config<MyConfig>::reset();
+/// @endcode
+///
+/// 使用示例（独立实例）：
+/// @code
+/// Config<MyConfig> cfg("path/to/config.json");
+/// if (cfg->enable) { ... }
+/// cfg.save();
 /// @endcode
 template <typename T>
 class Config {
 public:
-    /// @brief 构造配置对象
-    /// @param section 配置节点名称（在 JSON 中的顶层 key）
-    explicit Config(const std::string& section) : section_(section), autoSave_(true) { load(); }
+    // ==================== 单例 API ====================
+
+    /// @brief 获取全局单例配置（必须先调用 init()）
+    static Config& getInstance() {
+        Config* instance = getInstancePtr();
+        if (instance == nullptr) {
+            throw std::runtime_error("Config not initialized. Call init() first.");
+        }
+        return *instance;
+    }
+
+    /// @brief 初始化全局单例配置
+    /// @param configPath 配置文件路径
+    /// @param autoLoad 是否自动加载（默认 true）
+    static void init(const std::string& configPath, bool autoLoad = true) {
+        if (getInstancePtr() != nullptr) {
+            throw std::runtime_error("Config already initialized.");
+        }
+        getInstancePtr() = new Config(configPath, true);
+        if (autoLoad) {
+            getInstancePtr()->load();
+        }
+    }
+
+    /// @brief 使用固定路径前缀初始化全局单例配置
+    /// @param fileName 配置文件名（仅文件名，如 "rlx_money.json"）
+    /// @param autoLoad 是否自动加载（默认 true）
+    ///
+    /// 配置文件将自动放置在固定路径：plugins/RLXModeResources/config/{fileName}
+    static void initWithName(const std::string& fileName, bool autoLoad = true) {
+        const std::string fixedPrefix = "plugins/RLXModeResources/config/";
+        init(fixedPrefix + fileName, autoLoad);
+    }
+
+    /// @brief 重置全局单例（用于测试）
+    static void reset() {
+        Config* instance = getInstancePtr();
+        if (instance != nullptr) {
+            delete instance;
+            getInstancePtr() = nullptr;
+        }
+    }
+
+    /// @brief 检查单例是否已初始化
+    static bool isInitialized() {
+        return getInstancePtr() != nullptr;
+    }
+
+    // ==================== 构造函数（用于独立实例） ====================
+
+    /// @brief 构造独立配置实例（不使用全局单例）
+    explicit Config(const std::string& configPath)
+        : Config(configPath, false) {
+        load();
+    }
 
     /// @brief 析构时自动保存（如果启用）
     ~Config() {
-        if (autoSave_) {
-            save();
+        if (pImpl_) {
+            if (pImpl_->autoSave && pImpl_->dirty) {
+                try {
+                    saveFile();
+                } catch (...) {
+                    // 静默失败
+                }
+            }
+            // 仅当不是全局单例时才删除 pImpl
+            if (!pImpl_->isGlobalInstance) {
+                delete pImpl_;
+            } else {
+                // 全局单例由 reset() 负责删除
+                pImpl_ = nullptr;
+            }
         }
     }
 
     // 禁止拷贝和移动
-    Config(const Config&)                = delete;
-    Config& operator=(const Config&)     = delete;
-    Config(Config&&) noexcept            = delete;
+    Config(const Config&) = delete;
+    Config& operator=(const Config&) = delete;
+    Config(Config&&) noexcept = delete;
     Config& operator=(Config&&) noexcept = delete;
 
+    // ==================== 数据访问 ====================
+
     /// @brief 像指针一样访问配置成员
-    T*       operator->() { return &data_; }
-    const T* operator->() const { return &data_; }
+    T* operator->() {
+        markDirty();
+        return &pImpl_->data;
+    }
+
+    const T* operator->() const {
+        return &pImpl_->data;
+    }
 
     /// @brief 获取配置数据的引用
-    T&       get() { return data_; }
-    const T& get() const { return data_; }
+    T& get() {
+        markDirty();
+        return pImpl_->data;
+    }
+
+    const T& get() const {
+        return pImpl_->data;
+    }
+
+    // ==================== 配置操作 ====================
 
     /// @brief 保存配置到文件
     void save() {
-        try {
-            ConfigManager::ensureLoaded();
-            nlohmann::json j                    = data_;
-            ConfigManager::getCache()[section_] = j;
-            ConfigManager::save();
-        } catch (...) {
-            // 静默失败
-        }
+        saveFile();
+        pImpl_->dirty = false;
     }
 
     /// @brief 重新从文件加载配置
     void load() {
-        try {
-            auto& cache = ConfigManager::getCache();
-
-            // 如果还没加载过文件，先用默认值初始化 cache
-            // 这样 loadFromFile() 保存时就不是空 JSON，而是包含默认值的配置
-            if (!ConfigManager::isLoaded()) {
-                data_           = T{};
-                nlohmann::json j = data_;
-                cache[section_] = j;
-            }
-
-            ConfigManager::ensureLoaded();
-
-            // 如果 JSON 中有该 section，读取并更新
-            if (cache.contains(section_) && cache[section_].is_object()) {
-                data_ = cache[section_].get<T>();
-            } else {
-                // section 不存在（文件被手动修改），使用默认值并写入文件
-                data_           = T{};
-                nlohmann::json j = data_;
-                cache[section_] = j;
-                ConfigManager::save();
-            }
-        } catch (...) {
-            data_ = T{}; // 使用默认值
-        }
+        loadFile();
+        pImpl_->dirty = false;
     }
 
-    /// @brief 启用/禁用自动保存
-    void setAutoSave(bool enable) { autoSave_ = enable; }
+    /// @brief 重新加载配置（load 的别名）
+    void reload() {
+        load();
+    }
 
-    /// @brief 重置为默认值
-    void reset() {
-        data_ = T{};
+    /// @brief 重置为默认值并保存
+    void resetToDefault() {
+        pImpl_->data = T{};
         save();
     }
 
+    /// @brief 检查配置文件是否存在
+    [[nodiscard]] bool fileExists() const {
+        return std::filesystem::exists(pImpl_->configPath);
+    }
+
+    /// @brief 获取配置文件路径
+    [[nodiscard]] const std::string& getPath() const {
+        return pImpl_->configPath;
+    }
+
+    // ==================== 自动保存控制 ====================
+
+    /// @brief 启用/禁用自动保存（析构时）
+    void setAutoSave(bool enable) {
+        pImpl_->autoSave = enable;
+    }
+
+    /// @brief 获取配置是否已修改（脏标记）
+    [[nodiscard]] bool isDirty() const {
+        return pImpl_->dirty;
+    }
+
 private:
-    std::string section_;
-    T           data_;
-    bool        autoSave_;
+    /// @brief 内部实现结构（Pimpl 模式）
+    struct Impl {
+        std::string configPath;
+        T           data;
+        bool        autoSave;
+        bool        dirty;
+        bool        isGlobalInstance;
+
+        Impl(const std::string& path, bool isGlobal)
+            : configPath(path)
+            , data(T{})
+            , autoSave(true)
+            , dirty(false)
+            , isGlobalInstance(isGlobal) {}
+    };
+
+    Impl* pImpl_;
+
+    /// @brief 私有构造函数（区分单例和独立实例）
+    Config(const std::string& configPath, bool isGlobalInstance)
+        : pImpl_(new Impl(configPath, isGlobalInstance)) {}
+
+    /// @brief 获取单例指针的静态引用
+    static Config*& getInstancePtr() {
+        static Config* instance = nullptr;
+        return instance;
+    }
+
+    /// @brief 标记为已修改
+    void markDirty() {
+        pImpl_->dirty = true;
+    }
+
+    /// @brief 保存配置到文件（原子写入）
+    void saveFile() {
+        // 确保配置目录存在
+        std::filesystem::path configFile(pImpl_->configPath);
+        std::filesystem::path configDir = configFile.parent_path();
+        if (!configDir.empty()) {
+            std::filesystem::create_directories(configDir);
+        }
+
+        // 序列化配置数据
+        nlohmann::json j = pImpl_->data;
+
+        // 原子写入：先写临时文件，再重命名
+        std::string tempPath = std::string(pImpl_->configPath) + ".tmp";
+        std::ofstream outFile(tempPath);
+        if (outFile.is_open()) {
+            outFile << j.dump(4);
+            outFile.close();
+
+            // 重命名是原子操作（同一文件系统内）
+            std::filesystem::rename(tempPath, pImpl_->configPath);
+        }
+    }
+
+    /// @brief 从文件加载配置
+    void loadFile() {
+        // 确保配置目录存在
+        std::filesystem::path configFile(pImpl_->configPath);
+        std::filesystem::path configDir = configFile.parent_path();
+        if (!configDir.empty()) {
+            std::filesystem::create_directories(configDir);
+        }
+
+        // 尝试加载配置文件
+        std::ifstream file(pImpl_->configPath);
+
+        if (file.is_open()) {
+            try {
+                nlohmann::json j;
+                file >> j;
+                file.close();
+                pImpl_->data = j.get<T>();
+            } catch (const std::exception&) {
+                file.close();
+                pImpl_->data = T{};
+                save();
+            }
+        } else {
+            pImpl_->data = T{};
+            save();
+        }
+    }
 };
 
 } // namespace rlx::common

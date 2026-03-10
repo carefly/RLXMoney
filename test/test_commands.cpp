@@ -1,5 +1,6 @@
+#include "common/ConfigManager.hpp"
+#include "mod/config/ConfigStructures.h"
 #include "mocks/MockLeviLaminaAPI.h"
-#include "mod/config/MoneyConfig.h"
 #include "mod/economy/EconomyManager.h"
 #include "utils/CommandTestHelper.h"
 #include "utils/TestTempManager.h"
@@ -8,6 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
+
 
 
 namespace {
@@ -26,6 +28,9 @@ std::pair<std::string, std::string> setupIsolatedManager(
     double             feePercentage       = 0.0,
     bool               allowPlayerTransfer = true
 ) {
+    // 重置配置单例，确保每个测试用例都从干净状态开始
+    rlx::common::Config<rlx_money::MoneyConfigData>::reset();
+
     // 关闭之前的数据库连接，确保每个测试用例使用独立的数据库实例
     auto& dbManager = rlx_money::DatabaseManager::getInstance();
     if (dbManager.isInitialized()) {
@@ -39,7 +44,8 @@ std::pair<std::string, std::string> setupIsolatedManager(
     testConfig["database"]["path"] = dbPath;
     testConfig["defaultCurrency"]  = "gold";
 
-    // 创建默认币种配置
+    // 创建默认币种配置（新格式：需要 currencyId）
+    testConfig["currencies"]["gold"]["currencyId"]          = "gold";
     testConfig["currencies"]["gold"]["name"]                = "金币";
     testConfig["currencies"]["gold"]["symbol"]              = "G";
     testConfig["currencies"]["gold"]["enabled"]             = true;
@@ -50,20 +56,16 @@ std::pair<std::string, std::string> setupIsolatedManager(
     testConfig["currencies"]["gold"]["feePercentage"]       = feePercentage;
     testConfig["currencies"]["gold"]["allowPlayerTransfer"] = allowPlayerTransfer;
 
-    // 新的配置系统使用 "RLXMoney" 节点作为顶层
-    nlohmann::json finalConfig;
-    finalConfig["RLXMoney"] = testConfig;
-
     std::ofstream configFile(configPath);
-    configFile << finalConfig.dump(4);
+    configFile << testConfig.dump(4);
     configFile.close();
 
     // 注册文件以便自动清理
     rlx_money::test::TestTempManager::getInstance().registerFile(configPath);
     rlx_money::test::TestTempManager::getInstance().registerFile(dbPath);
 
-    REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(configPath));
-    REQUIRE_NOTHROW(rlx_money::MoneyConfig::reload());
+    REQUIRE_NOTHROW(rlx::common::Config<rlx_money::MoneyConfigData>::init(configPath));
+    REQUIRE_NOTHROW(rlx::common::Config<rlx_money::MoneyConfigData>::getInstance().reload());
 
     auto& manager = rlx_money::EconomyManager::getInstance();
     REQUIRE(manager.initialize());
@@ -101,7 +103,7 @@ void cleanupSingletonState() {
     }
 
     // 重置 MoneyConfig 的配置状态
-    rlx_money::MoneyConfig::resetForTesting();
+    rlx::common::Config<rlx_money::MoneyConfigData>::reset();
 
     // 清理 Mock 玩家数据
     rlx_money::LeviLaminaAPI::clearMockPlayers();
