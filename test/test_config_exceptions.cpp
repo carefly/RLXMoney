@@ -1,5 +1,5 @@
-#include "mod/config/MoneyConfig.h"
 #include "mod/config/ConfigStructures.h"
+#include "common/ConfigManager.hpp"
 #include "mod/exceptions/MoneyException.h"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
@@ -13,7 +13,7 @@
 
 TEST_CASE("MoneyConfig 测试", "[config][manager]") {
     // 每个测试开始前确保配置单例已重置
-    rlx_money::MoneyConfig::resetForTesting();
+    rlx_money::MoneyConfig::reset();
 
     // 使用临时文件管理器创建测试配置路径
     auto& tempManager = rlx_money::test::TestTempManager::getInstance();
@@ -24,10 +24,10 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
 
     SECTION("默认配置测试") {
         // 初始化配置
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(testConfigPath));
 
         // 获取默认配置
-        const auto& config = rlx_money::MoneyConfig::get();
+        const auto& config = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(!config.defaultCurrency.empty());
         REQUIRE(!config.currencies.empty());
         // 注意：由于单例模式，配置可能被之前的测试修改过
@@ -35,7 +35,7 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
         REQUIRE(config.currencies.size() > 0);
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
     }
 
     SECTION("配置加载测试") {
@@ -61,17 +61,17 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
         configFile.close();
 
         // 初始化配置
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(testConfigPath));
 
         // 验证配置值
-        const auto& config = rlx_money::MoneyConfig::get();
+        const auto& config = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(config.defaultCurrency == "gold");
         REQUIRE(config.currencies.at("gold").initialBalance == 1000);
         REQUIRE(config.currencies.at("gold").maxBalance == 1000000);
         REQUIRE(config.currencies.at("gold").allowPlayerTransfer == true);
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
         // 文件会自动清理
     }
 
@@ -84,7 +84,7 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
         }
 
         // 配置文件不存在时，应创建默认配置且不抛异常
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(nonexistentConfig));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(nonexistentConfig));
 
         // 清理创建的文件
         if (std::filesystem::exists(nonexistentConfig)) {
@@ -92,7 +92,7 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
         }
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
     }
 
     SECTION("配置热重载测试") {
@@ -119,9 +119,9 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
         })";
         configFile.close();
 
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(reloadConfigPath));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(reloadConfigPath));
 
-        const auto& config1 = rlx_money::MoneyConfig::get();
+        const auto& config1 = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(config1.currencies.at(config1.defaultCurrency).initialBalance == 500);
 
         // 修改配置文件（更新默认币种的初始余额与上限）
@@ -142,13 +142,13 @@ TEST_CASE("MoneyConfig 测试", "[config][manager]") {
         configFile2.close();
 
         // 热重载配置
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::reload());
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::getInstance().reload());
 
-        const auto& config2 = rlx_money::MoneyConfig::get();
+        const auto& config2 = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(config2.currencies.at(config2.defaultCurrency).initialBalance == 2000);
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
         // 文件会自动清理
     }
 }

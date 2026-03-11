@@ -2,7 +2,7 @@
 
 #include "CommandTestHelper.h"
 #include "mocks/MockLeviLaminaAPI.h"
-#include "mod/config/MoneyConfig.h"
+#include "mod/config/ConfigStructures.h"
 #include "mod/economy/EconomyManager.h"
 #include "mod/exceptions/MoneyException.h"
 #include <RLXMoney/types/Types.h>
@@ -285,9 +285,9 @@ bool CommandTestHelper::testAdminSetInitialCommand(
         if (amount < 0) {
             return !expectSuccess;
         }
-        auto& config = rlx_money::MoneyConfig::getWritable();
+        auto& config = rlx_money::MoneyConfig::getInstance().getWritable();
         config.currencies[config.defaultCurrency].initialBalance = amount;
-        rlx_money::MoneyConfig::save();
+        rlx_money::MoneyConfig::getInstance().save();
         return expectSuccess;
     } catch (...) {
         return !expectSuccess;
@@ -301,8 +301,8 @@ bool CommandTestHelper::testAdminGetInitialCommand(const std::string& adminXuid,
     }
 
     try {
-        (void)rlx_money::MoneyConfig::get().currencies.at(
-            rlx_money::MoneyConfig::get().defaultCurrency).initialBalance;
+        (void)rlx_money::MoneyConfig::getInstance().get().currencies.at(
+            rlx_money::MoneyConfig::getInstance().get().defaultCurrency).initialBalance;
         return true;
     } catch (...) {
         return false;
@@ -316,7 +316,7 @@ bool CommandTestHelper::testAdminReloadCommand(const std::string& adminXuid, con
     }
 
     try {
-        rlx_money::MoneyConfig::reload();
+        rlx_money::MoneyConfig::getInstance().reload();
         auto& manager = rlx_money::EconomyManager::getInstance();
         manager.syncCurrenciesFromConfig();
         return true;
@@ -332,7 +332,7 @@ bool CommandTestHelper::testCurrencyListCommand(const std::string& adminXuid, co
     }
 
     try {
-        const auto& config = rlx_money::MoneyConfig::get();
+        const auto& config = rlx_money::MoneyConfig::getInstance().get();
         return !config.currencies.empty();
     } catch (...) {
         return false;
@@ -351,7 +351,7 @@ bool CommandTestHelper::testCurrencyInfoCommand(
     }
 
     try {
-        const auto& config     = rlx_money::MoneyConfig::get();
+        const auto& config     = rlx_money::MoneyConfig::getInstance().get();
         auto        currencyIt = config.currencies.find(currencyId);
         if (currencyIt == config.currencies.end()) {
             return !expectSuccess;

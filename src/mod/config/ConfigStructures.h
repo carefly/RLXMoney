@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <nlohmann/json.hpp>
+#include "common/ConfigManager.hpp"
 
 namespace rlx_money {
 
@@ -63,6 +64,23 @@ struct ModConfig {
     DatabaseConfig                  database;
     std::string                     defaultCurrency = "gold";
     std::map<std::string, Currency> currencies; // 币种ID -> 币种
+
+    /// @brief 默认构造函数：创建默认金币配置
+    ModConfig() {
+        Currency gold;
+        gold.currencyId          = "gold";
+        gold.name                = "金币";
+        gold.symbol              = "G";
+        gold.enabled             = true;
+        gold.initialBalance      = 1000;
+        gold.maxBalance          = std::numeric_limits<int>::max();
+        gold.minTransferAmount   = 1;
+        gold.transferFee         = 0;
+        gold.feePercentage       = 0.0;
+        gold.allowPlayerTransfer = true;
+
+        currencies["gold"] = gold;
+    }
 
     /// @brief 验证整体配置的有效性
     /// @throw std::invalid_argument 如果配置无效
@@ -271,5 +289,21 @@ inline void ModConfig::validate() const {
         currency.validate();
     }
 }
+
+} // namespace rlx_money
+
+// ==================== 类型别名 ====================
+
+namespace rlx_money {
+
+/// @brief 便捷类型别名：金钱配置数据
+using MoneyConfigData = ModConfig;
+
+// 导入通用配置模板
+using rlx::common::Config;
+
+/// @brief 金钱配置类型别名
+/// 使用方式：MoneyConfig::init(path), MoneyConfig::get(), MoneyConfig::getInstance()
+using MoneyConfig = Config<MoneyConfigData>;
 
 } // namespace rlx_money

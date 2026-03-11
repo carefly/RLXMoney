@@ -1,5 +1,5 @@
 #include "SystemInitializer.h"
-#include "../config/MoneyConfig.h"
+#include "mod/config/ConfigStructures.h"
 #include "../database/DatabaseManager.h"
 #include "../economy/EconomyManager.h"
 
@@ -30,7 +30,7 @@ void SystemInitializer::resetAllForTesting() {
         // 按相反顺序重置，避免依赖冲突
         EconomyManager::getInstance().resetForTesting();
         DatabaseManager::getInstance().resetForTesting();
-        MoneyConfig::resetForTesting();
+        MoneyConfig::reset();
 
     } catch (const std::exception&) {
         // 重新抛出异常，让调用者处理日志记录

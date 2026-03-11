@@ -1,5 +1,5 @@
 #include <RLXMoney/api/RLXMoneyAPI.h>
-#include "mod/config/MoneyConfig.h"
+#include "mod/config/ConfigStructures.h"
 #include "mod/database/DatabaseManager.h"
 #include "mod/economy/EconomyManager.h"
 
@@ -79,7 +79,7 @@ int RLXMoneyAPI::getPlayerCount() { return EconomyManager::getInstance().getPlay
 bool RLXMoneyAPI::isValidAmount(int amount) { return EconomyManager::getInstance().isValidAmount(amount); }
 
 std::vector<std::string> RLXMoneyAPI::getEnabledCurrencyIds() {
-    const auto&              config = MoneyConfig::get();
+    const auto&              config = MoneyConfig::getInstance().get();
     std::vector<std::string> result;
     for (const auto& [currencyId, currency] : config.currencies) {
         if (currency.enabled) {
@@ -89,15 +89,15 @@ std::vector<std::string> RLXMoneyAPI::getEnabledCurrencyIds() {
     return result;
 }
 
-std::string RLXMoneyAPI::getDefaultCurrencyId() { return MoneyConfig::get().defaultCurrency; }
+std::string RLXMoneyAPI::getDefaultCurrencyId() { return MoneyConfig::getInstance().get().defaultCurrency; }
 
 bool RLXMoneyAPI::initialize(const std::string& configName) {
     try {
         // 1. 加载配置（使用固定路径前缀）
-        MoneyConfig::initialize(configName);
+        MoneyConfig::initWithName(configName);
 
         // 2. 初始化数据库
-        const auto& config = MoneyConfig::get();
+        const auto& config = MoneyConfig::getInstance().get();
         if (!DatabaseManager::getInstance().initialize(config.database.path)) {
             return false;
         }
@@ -121,7 +121,7 @@ bool RLXMoneyAPI::isInitialized() {
         }
 
         // 检查配置是否已加载（通过检查是否有默认币种）
-        const auto& config = MoneyConfig::get();
+        const auto& config = MoneyConfig::getInstance().get();
         if (config.defaultCurrency.empty() || config.currencies.empty()) {
             return false;
         }

@@ -1,5 +1,5 @@
 #include "mod/config/ConfigStructures.h"
-#include "mod/config/MoneyConfig.h"
+#include "common/ConfigManager.hpp"
 #include "utils/TestTempManager.h"
 #include <catch2/catch_all.hpp>
 #include <fstream>
@@ -7,7 +7,7 @@
 
 TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
     // 每个测试开始前确保配置单例已重置
-    rlx_money::MoneyConfig::resetForTesting();
+    rlx_money::MoneyConfig::reset();
 
     // 使用临时文件管理器创建测试配置路径
     auto&             tempManager    = rlx_money::test::TestTempManager::getInstance();
@@ -34,10 +34,13 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         configFile.close();
 
         // 初始化配置
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(testConfigPath));
+
+        // 显式保存以触发配置补全
+        rlx_money::MoneyConfig::getInstance().save();
 
         // 验证配置值
-        const auto& config = rlx_money::MoneyConfig::get();
+        const auto& config = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(config.defaultCurrency == "gold");
         REQUIRE(config.currencies.find("gold") != config.currencies.end());
         REQUIRE(config.currencies.at("gold").initialBalance == 5000);
@@ -59,7 +62,7 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         REQUIRE(content.find("\"database\"") != std::string::npos);
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
         // 文件会自动清理
     }
 
@@ -76,7 +79,10 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         configFile.close();
 
         // 初始化配置
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(emptyConfigPath));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(emptyConfigPath));
+
+        // 显式保存以触发配置补全
+        rlx_money::MoneyConfig::getInstance().save();
 
         // 读取保存后的配置文件，验证是否包含所有配置项
         std::ifstream updatedFile(emptyConfigPath);
@@ -92,7 +98,7 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         REQUIRE(content.find("\"allowPlayerTransfer\"") != std::string::npos);
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
         // 文件会自动清理
     }
 
@@ -127,7 +133,7 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         originalFile.close();
 
         // 初始化配置
-        REQUIRE_NOTHROW(rlx_money::MoneyConfig::initialize(testConfigPath));
+        REQUIRE_NOTHROW(rlx_money::MoneyConfig::init(testConfigPath));
 
         // 读取更新后的文件内容
         std::ifstream updatedFile(testConfigPath);
@@ -135,14 +141,14 @@ TEST_CASE("配置自动补全测试", "[config][auto_complete]") {
         updatedFile.close();
 
         // 验证配置值
-        const auto& config = rlx_money::MoneyConfig::get();
+        const auto& config = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(config.defaultCurrency == "gold");
         REQUIRE(config.currencies.at("gold").initialBalance == 2000);
         REQUIRE(config.currencies.at("gold").maxBalance == 5000000);
         REQUIRE(config.currencies.at("gold").allowPlayerTransfer == false);
 
         // 清理
-        rlx_money::MoneyConfig::resetForTesting();
+        rlx_money::MoneyConfig::reset();
         // 文件会自动清理
     }
 }

@@ -1,5 +1,5 @@
 #include "mocks/MockLeviLaminaAPI.h"
-#include "mod/config/MoneyConfig.h"
+#include "mod/config/ConfigStructures.h"
 #include "common/ConfigManager.hpp"
 #include "mod/core/SystemInitializer.h"
 #include <RLXMoney/data/DataStructures.h>
@@ -86,7 +86,7 @@ void cleanupFiles(const std::vector<std::string>& paths) {
 void ensureDatabaseInitialized() {
     auto& dbManager = rlx_money::DatabaseManager::getInstance();
     if (!dbManager.isInitialized()) {
-        const auto& config = rlx_money::MoneyConfig::get();
+        const auto& config = rlx_money::MoneyConfig::getInstance().get();
         REQUIRE(dbManager.initialize(config.database.path));
     }
     auto& manager = rlx_money::EconomyManager::getInstance();
@@ -1270,7 +1270,8 @@ TEST_CASE("EconomyManager 单线程稳定性测试", "[economy][manager][stabili
 // ============================================================================
 
 TEST_CASE("经济类型转换工具函数测试", "[economy][utils][types][conversion]") {
-    auto cleanupGuard = SingletonCleanupGuard{};
+    // 这些测试不需要访问配置，所以不需要 SingletonCleanupGuard
+    // auto cleanupGuard = SingletonCleanupGuard{};
 
     SECTION("TransactionType 转换测试") {
         // 测试 transactionTypeToString - 修正为实际的小写输出
@@ -1383,7 +1384,8 @@ TEST_CASE("经济类型转换工具函数测试", "[economy][utils][types][conve
 // ============================================================================
 
 TEST_CASE("经济数据结构测试", "[economy][data][structures]") {
-    auto cleanupGuard = SingletonCleanupGuard{};
+    // 这些测试不需要访问配置，所以不需要 SingletonCleanupGuard
+    // auto cleanupGuard = SingletonCleanupGuard{};
 
     SECTION("PlayerData 结构测试") {
         // 默认构造函数
