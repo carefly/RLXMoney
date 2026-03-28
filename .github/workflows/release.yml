@@ -104,17 +104,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
           path: RLXMoney
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: ${{ github.event.repository.name }}-sdk-packages-${{ github.sha }}
           path: sdk-packages
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: ${{ github.event.repository.name }}-sdk-packages-debug-${{ github.sha }}
           path: sdk-packages-debug
