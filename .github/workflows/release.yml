@@ -107,7 +107,7 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
-          path: RLXMoney
+          path: RLXMoney-windows-x64
 
       - uses: actions/download-artifact@v5
         with:
@@ -120,7 +120,7 @@ jobs:
           path: sdk-packages-debug
 
       - run: |
-          zip -r ${{ github.event.repository.name }}-windows-x64.zip RLXMoney/
+          zip -r ${{ github.event.repository.name }}-windows-x64.zip RLXMoney-windows-x64/
 
       # 打包 release 版本的 SDK（使用 PowerShell 脚本准备的包）
       - run: |
